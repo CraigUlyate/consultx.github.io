@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ConsultX Products Carousel Prototype</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            consultx: {
+              green: '#72C600',
+              greenDark: '#4FA000',
+              greenSoft: '#F1F8E8',
+              black: '#111111',
+              charcoal: '#343638',
+              border: '#E5E7EB'
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    html { scroll-behavior: smooth; }
+    body { font-family: Montserrat, Inter, Arial, sans-serif; }
+    .hide-scrollbar::-webkit-scrollbar { display: none; }
+    .hide-scrollbar { scrollbar-width: none; }
+  </style>
+</head>
+<body class="bg-white text-consultx-black">
+
+<header class="border-b border-gray-100 bg-white">
+  <div class="mx-auto flex h-24 max-w-[1500px] items-center justify-between px-8">
+    <div class="flex items-center gap-3">
+      <div class="text-3xl font-black tracking-tight">
+        <span class="text-consultx-green">X</span> CONSULT<span class="text-consultx-green">·X</span>
+      </div>
+    </div>
+
+    <nav class="hidden items-center gap-12 text-sm font-medium lg:flex">
+      <a href="#">Home</a>
+      <a href="#">About</a>
+      <a href="#">Services</a>
+      <a href="#" class="font-bold text-consultx-green">Products</a>
+      <a href="#">Blog</a>
+      <a href="#">Contact</a>
+    </nav>
+
+    <a
+      href="#"
+      class="rounded-md bg-consultx-green px-6 py-3 font-semibold text-white shadow-sm transition hover:-translate-y-0.5"
+    >
+      Book a Consultation
+    </a>
+  </div>
+</header>
+
+<main>
+  <section class="mx-auto max-w-[1500px] px-8 py-12 lg:py-16">
+    <div class="grid min-h-[650px] gap-8 xl:grid-cols-[390px_1fr_330px] xl:gap-12">
+
+      <!-- SEMI-CIRCULAR CAROUSEL -->
+      <aside class="relative hidden min-h-[620px] xl:block" aria-label="Products carousel">
+        <svg
+          class="absolute inset-y-0 left-0 h-full w-72"
+          viewBox="0 0 280 700"
+          fill="none"
+          aria-hidden="true"
+        >
+          <path
+            d="M20 40 C250 180, 250 520, 20 660"
+            stroke="#E5E7EB"
+            stroke-width="2"
+          />
+        </svg>
+
+        <button
+          id="upBtn"
+          class="absolute left-10 top-2 z-50 flex h-10 w-10 items-center justify-center rounded-full border bg-white shadow"
+          aria-label="Previous product"
+        >↑</button>
+
+        <div id="carouselNodes" class="absolute inset-0"></div>
+
+        <button
+          id="downBtn"
+          class="absolute bottom-2 left-10 z-50 flex h-10 w-10 items-center justify-center rounded-full border bg-white shadow"
+          aria-label="Next product"
+        >↓</button>
+
+        <div class="absolute left-2 top-1/2 -translate-y-1/2 text-center text-xs text-gray-500">
+          <div class="mb-3 text-lg">↑</div>
+          <div>Scroll to<br/>explore</div>
+          <div class="mt-3 text-lg">↓</div>
+        </div>
+      </aside>
+
+      <!-- MOBILE PRODUCT SELECTOR -->
+      <div class="hide-scrollbar flex snap-x gap-5 overflow-x-auto pb-4 xl:hidden" id="mobileCarousel"></div>
+
+      <!-- ACTIVE PRODUCT -->
+      <section class="flex items-center">
+        <div id="detailPanel" class="w-full transition-all duration-300">
+          <span
+            id="productStatus"
+            class="inline-flex rounded-lg bg-consultx-greenSoft px-4 py-2 text-xs font-semibold uppercase tracking-wide text-consultx-greenDark"
+          ></span>
+
+          <h1 id="productName" class="mt-8 text-5xl font-bold tracking-tight lg:text-6xl"></h1>
+          <p id="productCategory" class="mt-4 text-2xl font-semibold text-consultx-green"></p>
+          <p id="productDescription" class="mt-7 max-w-2xl text-lg leading-8 text-gray-700"></p>
+
+          <div id="featureGrid" class="mt-10 grid max-w-2xl grid-cols-1 gap-x-12 gap-y-5 md:grid-cols-2"></div>
+
+          <a
+            href="#"
+            id="productCta"
+            class="mt-12 inline-flex items-center gap-4 rounded-md bg-consultx-green px-7 py-4 font-semibold text-white transition hover:-translate-y-0.5 hover:bg-consultx-greenDark hover:shadow-lg"
+          >
+            Learn More <span>→</span>
+          </a>
+        </div>
+      </section>
+
+      <!-- CONTEXT PANEL -->
+      <aside class="flex items-center">
+        <div class="w-full rounded-3xl border border-gray-200 bg-white p-8 shadow-[0_8px_28px_rgba(0,0,0,0.08)]">
+          <h2 class="text-xl font-bold">How It Works</h2>
+
+          <div class="mt-7 space-y-6">
+            <div class="flex gap-4">
+              <span class="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-teal-600 text-lg text-white">↓</span>
+              <div>
+                <h3 class="font-semibold">Upload / Shared</h3>
+                <p class="mt-1 text-sm leading-6 text-gray-600">Upload or share your expense documents securely.</p>
+              </div>
+            </div>
+
+            <div class="flex gap-4">
+              <span class="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-teal-600 text-lg text-white">⚙</span>
+              <div>
+                <h3 class="font-semibold">Processing</h3>
+                <p class="mt-1 text-sm leading-6 text-gray-600">AI extracts and processes your data.</p>
+              </div>
+            </div>
+
+            <div class="flex gap-4">
+              <span class="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-teal-600 text-lg text-white">✓</span>
+              <div>
+                <h3 class="font-semibold">Review</h3>
+                <p class="mt-1 text-sm leading-6 text-gray-600">Review, validate and make any necessary edits.</p>
+              </div>
+            </div>
+
+            <div class="flex gap-4">
+              <span class="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-sky-500 text-lg text-white">⇩</span>
+              <div>
+                <h3 class="font-semibold">Outputs</h3>
+                <p class="mt-1 text-sm leading-6 text-gray-600">Export to Excel, CSV, Airtable or your accounting system.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </aside>
+
+    </div>
+
+    <section class="mt-10 flex flex-col items-start justify-between gap-5 rounded-xl border border-consultx-green/50 px-8 py-6 md:flex-row md:items-center">
+      <div>
+        <h2 class="text-2xl font-bold">More products. More impact.</h2>
+        <p class="mt-1 text-gray-600">We're continuously building tools that help you work smarter and grow stronger.</p>
+      </div>
+      <a href="#" class="rounded-md bg-consultx-green px-7 py-4 font-semibold text-white">
+        Book a Consultation →
+      </a>
+    </section>
+  </section>
+</main>
+
+<div class="h-20 bg-gradient-to-t from-gray-300/60 to-transparent"></div>
+
+<footer class="bg-consultx-charcoal text-white">
+  <div class="mx-auto grid max-w-[1500px] gap-10 px-8 py-12 md:grid-cols-4">
+    <div>
+      <div class="text-2xl font-black"><span class="text-consultx-green">X</span> CONSULT<span class="text-consultx-green">·X</span></div>
+      <p class="mt-5 text-sm leading-6 text-gray-300">
+        IT'S NOT ROCKET SCIENCE,<br/>IT'S BUSINESS SCIENCE
+      </p>
+    </div>
+    <div>
+      <h3 class="font-semibold">Navigate</h3>
+      <div class="mt-4 space-y-2 text-sm text-gray-300">
+        <div>Home</div><div>About</div><div>Services</div>
+        <div class="text-consultx-green">Products</div><div>Blog</div><div>Contact</div>
+      </div>
+    </div>
+    <div>
+      <h3 class="font-semibold">Contact</h3>
+      <div class="mt-4 space-y-3 text-sm text-gray-300">
+        <div>(011) 516 0210</div>
+        <div>(081) 753 6198</div>
+        <div>info@consultx.co.za</div>
+      </div>
+    </div>
+    <div>
+      <h3 class="font-semibold">Follow Us</h3>
+      <div class="mt-5 flex gap-3">
+        <span class="flex h-10 w-10 items-center justify-center rounded-full bg-consultx-green font-bold">in</span>
+        <span class="flex h-10 w-10 items-center justify-center rounded-full bg-consultx-green font-bold">f</span>
+        <span class="flex h-10 w-10 items-center justify-center rounded-full bg-consultx-green font-bold">▶</span>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<script>
+const products = [
+  {
+    id: 'anna-expense',
+    name: 'AnNa Expense',
+    category: 'AI-Powered Expense Processing',
+    status: 'Featured Product',
+    initials: 'AnNa',
+    description: 'Automate expense extraction, coding and validation with AI. Review, validate and export with confidence.',
+    features: ['AI Extraction','Duplicate Detection','Multi-line Invoices','VAT & Tax Rules','FX Conversion','System Agnostic'],
+    cta: 'Learn More'
+  },
+  {
+    id: 'iris-carbon-xbrl',
+    name: 'Iris Carbon XBRL',
+    category: 'XBRL Reporting Made Simple',
+    status: '',
+    initials: 'XBRL',
+    description: 'Create accurate, compliant XBRL reports quickly using Iris Carbon.',
+    features: ['XBRL Reporting','Validation Checks','Compliance Ready','CIPC / filing support'],
+    cta: 'Learn More'
+  },
+  {
+    id: 'cipc-compliance',
+    name: 'CIPC Compliance',
+    category: 'Company Compliance Simplified',
+    status: '',
+    initials: 'CIPC',
+    description: 'Streamline company compliance workflows, annual returns and related statutory requirements.',
+    features: ['Annual Returns','Director Changes','Name Reservations','Status Monitoring'],
+    cta: 'Learn More'
+  },
+  {
+    id: 'financial-modelling',
+    name: 'Financial Modelling',
+    category: 'Built for Better Decisions',
+    status: '',
+    initials: 'FM',
+    description: 'Dynamic financial models for forecasting, budgeting and scenario planning.',
+    features: ['Forecasting','Budgeting','Scenario Analysis','DCF Models'],
+    cta: 'Learn More'
+  },
+  {
+    id: 'business-valuations',
+    name: 'Business Valuations',
+    category: 'Know the True Value',
+    status: '',
+    initials: 'VAL',
+    description: 'Independent, professionally prepared valuations for transactions, reporting, litigation and strategic decisions.',
+    features: ['DCF Valuations','Independent Reports','Scenario Analysis','Expert Analysis'],
+    cta: 'Learn More'
+  },
+  {
+    id: 'pivot-analysis',
+    name: 'Pivot Analysis',
+    category: 'Business Performance Diagnostic',
+    status: 'Coming Soon',
+    initials: 'PIV',
+    description: 'Analyse accounting data, management feedback and business performance to identify weaknesses, risks and improvement opportunities.',
+    features: ['24-month GL Analysis','Management Questionnaire','Performance Diagnostics','Improvement Roadmap'],
+    cta: 'Coming Soon'
+  },
+  {
+    id: 'fastleads',
+    name: 'FastLeads',
+    category: 'AI-Assisted Lead Intelligence',
+    status: 'Coming Soon',
+    initials: 'FL',
+    description: 'Find target companies and decision-makers, verify data and perform deeper lead research.',
+    features: ['Company Search','Person Search','Data Verification','Email Discovery'],
+    cta: 'Coming Soon'
+  },
+  {
+    id: 'workflow-automation',
+    name: 'Workflow Automation',
+    category: 'SME Workflow & EOD Automation',
+    status: 'Concept',
+    initials: 'WF',
+    description: 'A lightweight workflow orchestration platform for finance and operational processes.',
+    features: ['Workflow Scheduling','Dependencies','Rerun & Recovery','Operational Monitoring'],
+    cta: 'Concept'
+  },
+  {
+    id: 'ai-finance-tools',
+    name: 'AI Finance Tools',
+    category: 'Intelligent Finance. Smarter Business.',
+    status: 'Coming Soon',
+    initials: 'AI',
+    description: 'A growing suite of AI-enabled finance tools for analysis, reporting and automation.',
+    features: ['AI Insights','Automation','Smart Reporting','Natural Language'],
+    cta: 'Coming Soon'
+  }
+];
+
+let activeIndex = 0;
+let wheelLocked = false;
+
+const nodeHost = document.getElementById('carouselNodes');
+const mobileHost = document.getElementById('mobileCarousel');
+
+function renderNodes() {
+  nodeHost.innerHTML = '';
+  mobileHost.innerHTML = '';
+
+  products.forEach((product, index) => {
+    const distance = index - activeIndex;
+    const wrappedDistance =
+      Math.abs(distance) > products.length / 2
+        ? distance > 0
+          ? distance - products.length
+          : distance + products.length
+        : distance;
+
+    if (Math.abs(wrappedDistance) <= 3) {
+      const y = 300 + wrappedDistance * 115;
+      const x = 165 - Math.pow(wrappedDistance, 2) * 11;
+      const scale = wrappedDistance === 0 ? 1.28 : Math.max(.74, 1 - Math.abs(wrappedDistance) * .09);
+      const opacity = Math.max(.45, 1 - Math.abs(wrappedDistance) * .16);
+
+      const btn = document.createElement('button');
+      btn.className = 'absolute flex items-center gap-5 transition-all duration-500 ease-out';
+      btn.style.left = `${x}px`;
+      btn.style.top = `${y}px`;
+      btn.style.transform = `translate(-50%, -50%) scale(${scale})`;
+      btn.style.opacity = opacity;
+      btn.style.zIndex = wrappedDistance === 0 ? 30 : 10;
+
+      btn.innerHTML = `
+        <span class="
+          flex h-20 w-20 items-center justify-center rounded-full bg-white
+          ${wrappedDistance === 0
+            ? 'border-2 border-consultx-green shadow-[0_12px_34px_rgba(114,198,0,0.18)] ring-4 ring-consultx-green/10'
+            : 'border border-gray-200 shadow-[0_8px_28px_rgba(0,0,0,0.08)]'}
+        ">
+          <span class="text-sm font-black ${wrappedDistance === 0 ? 'text-consultx-greenDark' : 'text-gray-700'}">
+            ${product.initials}
+          </span>
+        </span>
+        <span class="whitespace-nowrap text-sm ${wrappedDistance === 0 ? 'font-bold text-consultx-greenDark' : 'font-semibold text-gray-700'}">
+          ${product.name}
+        </span>
+      `;
+
+      btn.addEventListener('click', () => setActive(index));
+      nodeHost.appendChild(btn);
+    }
+
+    const mobileBtn = document.createElement('button');
+    mobileBtn.className = `snap-center shrink-0 rounded-full border bg-white px-6 py-5 text-sm font-semibold shadow ${
+      index === activeIndex ? 'border-consultx-green text-consultx-greenDark ring-4 ring-consultx-green/10' : 'border-gray-200'
+    }`;
+    mobileBtn.textContent = product.name;
+    mobileBtn.addEventListener('click', () => setActive(index));
+    mobileHost.appendChild(mobileBtn);
+  });
+}
+
+function renderDetails() {
+  const p = products[activeIndex];
+  const panel = document.getElementById('detailPanel');
+
+  panel.classList.add('opacity-0', 'translate-y-2');
+
+  setTimeout(() => {
+    document.getElementById('productStatus').textContent = p.status || 'ConsultX Product';
+    document.getElementById('productName').textContent = p.name;
+    document.getElementById('productCategory').textContent = p.category;
+    document.getElementById('productDescription').textContent = p.description;
+    document.getElementById('productCta').firstChild.textContent = p.cta + ' ';
+
+    document.getElementById('featureGrid').innerHTML = p.features.map(feature => `
+      <div class="flex items-center gap-3">
+        <span class="flex h-6 w-6 items-center justify-center rounded-full border border-consultx-green text-sm text-consultx-green">✓</span>
+        <span class="text-base font-medium text-gray-800">${feature}</span>
+      </div>
+    `).join('');
+
+    panel.classList.remove('opacity-0', 'translate-y-2');
+  }, 160);
+}
+
+function setActive(index) {
+  activeIndex = (index + products.length) % products.length;
+  renderNodes();
+  renderDetails();
+}
+
+function next() { setActive(activeIndex + 1); }
+function previous() { setActive(activeIndex - 1); }
+
+document.getElementById('downBtn').addEventListener('click', next);
+document.getElementById('upBtn').addEventListener('click', previous);
+
+window.addEventListener('keydown', (e) => {
+  if (e.key === 'ArrowDown') next();
+  if (e.key === 'ArrowUp') previous();
+});
+
+window.addEventListener('wheel', (e) => {
+  if (window.innerWidth < 1280 || wheelLocked) return;
+  wheelLocked = true;
+  e.deltaY > 0 ? next() : previous();
+  setTimeout(() => wheelLocked = false, 450);
+}, { passive: true });
+
+let touchY = null;
+window.addEventListener('touchstart', e => {
+  touchY = e.touches[0].clientY;
+}, { passive: true });
+
+window.addEventListener('touchend', e => {
+  if (touchY === null) return;
+  const delta = e.changedTouches[0].clientY - touchY;
+  if (Math.abs(delta) > 60) {
+    delta < 0 ? next() : previous();
+  }
+  touchY = null;
+}, { passive: true });
+
+renderNodes();
+renderDetails();
+</script>
+
+</body>
+</html>

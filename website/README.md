@@ -12,7 +12,18 @@ npm run dev
 
 Open [http://localhost:3000/products](http://localhost:3000/products).
 
-## Build for Afrihost / cPanel
+## Deploy to Afrihost
+
+See [`../deploy_changes.md`](../deploy_changes.md).
+
+```powershell
+cd website
+Copy-Item .env.deploy.example .env.local
+# fill AFRIHOST_* values
+npm run deploy
+```
+
+## Build only (manual upload)
 
 ```bash
 cd website
@@ -20,8 +31,6 @@ npm run build
 ```
 
 Static files are written to `website/out/`.
-
-Upload the contents of `out/` into the domain document root on Afrihost (for example `public_html` or `consultx.co.za`).
 
 ## Notes
 

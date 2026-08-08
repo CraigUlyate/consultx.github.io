@@ -48,13 +48,28 @@ export function ProductDetails({ product }: ProductDetailsProps) {
             ))}
           </div>
 
-          <Link
-            href={product.href}
-            className="mt-12 inline-flex items-center gap-3 rounded-md bg-gradient-to-r from-consultx-green-dark to-consultx-green px-7 py-4 font-semibold text-white transition hover:-translate-y-0.5 hover:shadow-lg"
-          >
-            {product.cta}
-            <span aria-hidden="true">→</span>
-          </Link>
+          <div className="mt-12 flex flex-wrap items-center gap-4">
+            {product.tryItHref && product.tryItLabel ? (
+              <a
+                href={product.tryItHref}
+                className="inline-flex items-center gap-3 rounded-md bg-gradient-to-r from-consultx-green-dark to-consultx-green px-7 py-4 font-semibold text-white transition hover:-translate-y-0.5 hover:shadow-lg"
+              >
+                {product.tryItLabel}
+                <span aria-hidden="true">→</span>
+              </a>
+            ) : null}
+            <Link
+              href={product.href}
+              className={`inline-flex items-center gap-3 rounded-md px-7 py-4 font-semibold transition hover:-translate-y-0.5 ${
+                product.tryItHref
+                  ? "border border-consultx-border text-consultx-charcoal hover:border-consultx-green hover:text-consultx-green-dark"
+                  : "bg-gradient-to-r from-consultx-green-dark to-consultx-green text-white hover:shadow-lg"
+              }`}
+            >
+              {product.cta}
+              <span aria-hidden="true">→</span>
+            </Link>
+          </div>
         </motion.div>
       </AnimatePresence>
     </section>

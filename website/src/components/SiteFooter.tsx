@@ -13,8 +13,8 @@ const navigate = [
 
 export function SiteFooter() {
   return (
-    <footer className="bg-consultx-charcoal text-white">
-      <div className="mx-auto grid max-w-[1500px] gap-10 px-5 py-14 md:grid-cols-2 md:px-8 lg:grid-cols-4">
+    <footer className="relative z-0 bg-consultx-charcoal text-white">
+      <div className="mx-auto grid max-w-[1500px] gap-10 px-5 pt-12 pb-14 md:grid-cols-2 md:px-8 md:pt-14 lg:grid-cols-4">
         <div>
           <ConsultXLogo variant="light" />
           <p className="mt-6 text-sm leading-7 tracking-wide text-gray-300 uppercase">
@@ -65,7 +65,7 @@ export function SiteFooter() {
           <h3 className="text-base font-semibold">Follow Us</h3>
           <div className="mt-5 flex gap-3">
             {[
-              { label: "in", href: "https://www.linkedin.com/" },
+              { label: "in", href: "https://www.linkedin.com/company/18122520/" },
               { label: "f", href: "https://www.facebook.com/" },
               { label: "▶", href: "https://www.youtube.com/" },
             ].map((social) => (

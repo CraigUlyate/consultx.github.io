@@ -7,30 +7,45 @@ import { MobileProductCarousel } from "@/components/products/MobileProductCarous
 import { ProductDetails } from "@/components/products/ProductDetails";
 import { ProductContextPanel } from "@/components/products/ProductContextPanel";
 
+const DESKTOP_CAROUSEL_MIN = 1280;
+
 export function ProductShowcase() {
   const [activeIndex, setActiveIndex] = useState(0);
   const [wheelLocked, setWheelLocked] = useState(false);
+  const [showScrollHint, setShowScrollHint] = useState(true);
+
+  function dismissHint() {
+    setShowScrollHint(false);
+  }
 
   function setActive(index: number) {
-    setActiveIndex(((index % products.length) + products.length) % products.length);
+    const nextIndex = ((index % products.length) + products.length) % products.length;
+    if (nextIndex !== activeIndex) dismissHint();
+    setActiveIndex(nextIndex);
   }
 
   function next() {
-    setActive(activeIndex + 1);
+    dismissHint();
+    setActiveIndex((current) => (current + 1) % products.length);
   }
 
   function previous() {
-    setActive(activeIndex - 1);
+    dismissHint();
+    setActiveIndex((current) => (current - 1 + products.length) % products.length);
   }
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
+      // Vertical carousel keys only on desktop layout.
+      if (window.innerWidth < DESKTOP_CAROUSEL_MIN) return;
       if (event.key === "ArrowDown") {
         event.preventDefault();
+        dismissHint();
         setActiveIndex((current) => (current + 1) % products.length);
       }
       if (event.key === "ArrowUp") {
         event.preventDefault();
+        dismissHint();
         setActiveIndex((current) => (current - 1 + products.length) % products.length);
       }
     };
@@ -40,11 +55,11 @@ export function ProductShowcase() {
   }, []);
 
   useEffect(() => {
-    let touchY: number | null = null;
-
-    const onWheel = (event: WheelEvent) => {
-      if (window.innerWidth < 1280 || wheelLocked) return;
+    const onWheelNav = (event: WheelEvent) => {
+      // Wheel switches products only for the desktop semi-circular carousel.
+      if (window.innerWidth < DESKTOP_CAROUSEL_MIN || wheelLocked) return;
       setWheelLocked(true);
+      dismissHint();
       if (event.deltaY > 0) {
         setActiveIndex((current) => (current + 1) % products.length);
       } else {
@@ -53,41 +68,18 @@ export function ProductShowcase() {
       window.setTimeout(() => setWheelLocked(false), 450);
     };
 
-    const onTouchStart = (event: TouchEvent) => {
-      touchY = event.touches[0]?.clientY ?? null;
-    };
-
-    const onTouchEnd = (event: TouchEvent) => {
-      if (touchY === null) return;
-      const delta = (event.changedTouches[0]?.clientY ?? touchY) - touchY;
-      if (Math.abs(delta) > 60) {
-        if (delta < 0) {
-          setActiveIndex((current) => (current + 1) % products.length);
-        } else {
-          setActiveIndex((current) => (current - 1 + products.length) % products.length);
-        }
-      }
-      touchY = null;
-    };
-
-    window.addEventListener("wheel", onWheel, { passive: true });
-    window.addEventListener("touchstart", onTouchStart, { passive: true });
-    window.addEventListener("touchend", onTouchEnd, { passive: true });
-
-    return () => {
-      window.removeEventListener("wheel", onWheel);
-      window.removeEventListener("touchstart", onTouchStart);
-      window.removeEventListener("touchend", onTouchEnd);
-    };
+    window.addEventListener("wheel", onWheelNav, { passive: true });
+    return () => window.removeEventListener("wheel", onWheelNav);
   }, [wheelLocked]);
 
   const product = products[activeIndex];
 
   return (
     <section className="mx-auto max-w-[1500px] px-5 py-10 md:px-8 lg:py-16">
-      <div className="grid min-h-[650px] gap-8 xl:grid-cols-[390px_1fr_330px] xl:gap-12">
+      <div className="grid min-h-[650px] gap-8 xl:grid-cols-[420px_1fr_330px] xl:gap-12">
         <ProductCarousel
           activeIndex={activeIndex}
+          showScrollHint={showScrollHint}
           onSelect={setActive}
           onPrevious={previous}
           onNext={next}

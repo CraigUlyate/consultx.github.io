@@ -13,9 +13,11 @@ const navItems = [
     label: "Services",
     href: "/services/",
     children: [
-      { label: "Financial Management", href: "/services/#financial-management" },
-      { label: "Process Re-engineering", href: "/services/#process" },
-      { label: "Strategic Consulting", href: "/services/#strategy" },
+      { label: "Financial Management", href: "/services/financial-management/" },
+      { label: "Process Re-engineering", href: "/services/process-reengineering/" },
+      { label: "Business Consulting", href: "/services/business-consulting/" },
+      { label: "Business Valuations", href: "/services/business-valuations/" },
+      { label: "Outsourced CFO", href: "/services/outsourced-cfo/" },
     ],
   },
   { label: "Products", href: "/products/" },
@@ -41,7 +43,7 @@ export function SiteHeader() {
           {navItems.map((item) => {
             const active = isActive(pathname, item.href);
             return (
-              <div key={item.href} className="relative group">
+              <div key={item.href} className="group relative flex h-20 items-center md:h-24">
                 <Link
                   href={item.href}
                   className={`inline-flex items-center gap-1.5 transition ${
@@ -54,19 +56,21 @@ export function SiteHeader() {
                   {item.children ? <ChevronDown className="h-3.5 w-3.5" /> : null}
                 </Link>
                 {active ? (
-                  <span className="absolute -bottom-2 left-0 h-0.5 w-full rounded bg-consultx-green" />
+                  <span className="absolute bottom-6 left-0 h-0.5 w-full rounded bg-consultx-green md:bottom-8" />
                 ) : null}
                 {item.children ? (
-                  <div className="invisible absolute left-1/2 top-full z-40 mt-4 w-56 -translate-x-1/2 rounded-xl border border-consultx-border bg-white p-2 opacity-0 shadow-soft transition group-hover:visible group-hover:opacity-100">
-                    {item.children.map((child) => (
-                      <Link
-                        key={child.href}
-                        href={child.href}
-                        className="block rounded-lg px-3 py-2 text-sm text-consultx-charcoal hover:bg-consultx-green-soft hover:text-consultx-green-dark"
-                      >
-                        {child.label}
-                      </Link>
-                    ))}
+                  <div className="invisible absolute top-full left-1/2 z-50 w-64 -translate-x-1/2 pt-0 opacity-0 transition group-hover:visible group-hover:opacity-100 group-focus-within:visible group-focus-within:opacity-100">
+                    <div className="rounded-xl border border-consultx-border bg-white p-2 shadow-soft">
+                      {item.children.map((child) => (
+                        <Link
+                          key={child.href}
+                          href={child.href}
+                          className="block rounded-lg px-3 py-2.5 text-sm text-consultx-charcoal hover:bg-consultx-green-soft hover:text-consultx-green-dark"
+                        >
+                          {child.label}
+                        </Link>
+                      ))}
+                    </div>
                   </div>
                 ) : null}
               </div>

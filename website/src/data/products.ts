@@ -19,6 +19,8 @@ export const products: Product[] = [
     ],
     cta: "Learn More",
     href: "/contact/",
+    tryItLabel: "Try it",
+    tryItHref: "/try-anna.php",
     workflowTitle: "How It Works",
     workflow: [
       {
@@ -310,7 +312,7 @@ export const products: Product[] = [
     id: "workflow-automation",
     name: "Workflow Automation",
     shortName: "WF",
-    category: "SME Workflow & EOD Automation",
+    category: "SME Workflow & Business Process Automation",
     status: "Concept",
     description:
       "A lightweight workflow orchestration platform for finance and operational processes.",
@@ -332,7 +334,7 @@ export const products: Product[] = [
       },
       {
         title: "Schedule",
-        description: "Run EOD and recurring workflows on a reliable cadence.",
+        description: "Run business process and recurring workflows on a reliable cadence.",
         tone: "green",
         icon: "automate",
       },

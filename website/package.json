@@ -12,10 +12,12 @@
   },
   "dependencies": {
     "framer-motion": "^13.0.0",
+    "gray-matter": "^4.0.3",
     "lucide-react": "^1.30.0",
     "next": "15.5.23",
     "react": "19.1.0",
-    "react-dom": "19.1.0"
+    "react-dom": "19.1.0",
+    "react-markdown": "^10.1.0"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
@@ -27,6 +29,7 @@
     "dotenv": "^17.4.2",
     "eslint": "^9",
     "eslint-config-next": "15.5.23",
+    "sharp": "^0.35.3",
     "ssh2-sftp-client": "^12.1.1",
     "tailwindcss": "^4",
     "typescript": "^5"

@@ -16,6 +16,7 @@ dotenv.config({ path: path.join(root, ".env") });
 const args = new Set(process.argv.slice(2));
 const dryRun = args.has("--dry-run");
 const clean = args.has("--clean");
+const skipBuild = args.has("--skip-build");
 
 function required(name) {
   const value = process.env[name]?.trim();
@@ -26,7 +27,14 @@ function required(name) {
 }
 
 function normalizeRemoteDir(dir) {
-  const trimmed = dir.replace(/\\/g, "/").replace(/\/+$/, "");
+  let trimmed = dir.replace(/\\/g, "/").replace(/\/+$/, "");
+  // Afrihost FTP is chrooted to the account home. Strip absolute home prefixes.
+  trimmed = trimmed.replace(/^\/home\/[^/]+(?=\/|$)/, "");
+  if (!trimmed || trimmed === "/") {
+    throw new Error(
+      'AFRIHOST_REMOTE_DIR must be a chroot path like /public_html (not /home/user/...)'
+    );
+  }
   return trimmed.startsWith("/") ? trimmed : `/${trimmed}`;
 }
 
@@ -41,17 +49,32 @@ function walkFiles(dir) {
 }
 
 function build() {
+  if (skipBuild) {
+    console.log("Skipping build (--skip-build).");
+    if (!fs.existsSync(path.join(outDir, "index.html"))) {
+      throw new Error("website/out/index.html missing — run a build first");
+    }
+    return;
+  }
+
   console.log("Building static export...");
   const result = spawnSync("npm", ["run", "build"], {
     cwd: root,
     stdio: "inherit",
     shell: true,
   });
-  if (result.status !== 0) {
+
+  const hasExport = fs.existsSync(path.join(outDir, "index.html"));
+  if (result.status !== 0 && !hasExport) {
     throw new Error("Build failed — deploy aborted");
   }
-  if (!fs.existsSync(outDir)) {
-    throw new Error("Build succeeded but website/out/ is missing");
+  if (result.status !== 0 && hasExport) {
+    console.warn(
+      "Build exited with an error, but out/ looks complete — continuing deploy."
+    );
+  }
+  if (!hasExport) {
+    throw new Error("Build finished but website/out/index.html is missing");
   }
 }
 

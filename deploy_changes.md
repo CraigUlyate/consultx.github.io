@@ -5,9 +5,10 @@ Deploy the ConsultX static site from this workspace straight to Afrihost (cPanel
 ## One-time setup
 
 1. In Afrihost cPanel, confirm FTP/SFTP access works (same username/password as cPanel, or a dedicated FTP account).
-2. Decide the remote folder:
-   - Primary domain document root: usually `/public_html/` or `/home/consuvuv/public_html/`
-   - Addon / ConsultX domain folder (from your File Manager): often `/consultx.co.za/` or `/home/consuvuv/consultx.co.za/`
+2. Decide the remote folder. Afrihost FTP is **chrooted** to the account home, so use:
+   - `/public_html` — live ConsultX site (correct deploy target)
+   - `/consultx.co.za` — separate folder (not the live document root)
+   Do **not** use `/home/consuvuv/...` paths over FTP; those create nested folders inside the chroot.
 3. Copy the env template and fill in secrets:
 
 ```powershell
@@ -22,17 +23,17 @@ Required values:
 AFRIHOST_HOST=major.aserv.co.za
 AFRIHOST_USER=consuvuv
 AFRIHOST_PASSWORD=your-cpanel-or-ftp-password
-AFRIHOST_PORT=22
-AFRIHOST_PROTOCOL=sftp
-AFRIHOST_REMOTE_DIR=/home/consuvuv/public_html
+AFRIHOST_PORT=21
+AFRIHOST_PROTOCOL=ftp
+AFRIHOST_REMOTE_DIR=/public_html
 ```
 
 Notes:
 
-- Host from your File Manager URL was `major.aserv.co.za` — that is a good SFTP/FTP host. `ftp.consultx.co.za` can also work.
-- Prefer `sftp` on port `22`. Use `ftp` / port `21` only if SFTP is blocked.
+- Host from your File Manager URL was `major.aserv.co.za`. `ftp.consultx.co.za` can also work.
+- Prefer `ftp` on port `21` with South Africa allowed in Afrihost FTP access control. Use `sftp` / port `22` if preferred and available.
 - `.env.local` is gitignored. Never commit passwords.
-- If WordPress is still in `public_html`, deploy to a staging folder first, or clear WP after backup. Uploading the static export into a live WP root will overwrite overlapping files (`index.html` vs `index.php`).
+- WordPress lived in `/public_html`. Deploy renames `index.php` to `index.php.bak-wp-YYYY-MM-DD` so the new `index.html` becomes the homepage. Other WP files remain until you remove them.
 
 ## Deploy from here
 

@@ -15,6 +15,8 @@ export type Product = {
   features: string[];
   cta: string;
   href: string;
+  tryItLabel?: string;
+  tryItHref?: string;
   workflowTitle: string;
   workflow: ProductWorkflowStep[];
 };

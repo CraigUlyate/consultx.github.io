@@ -6,6 +6,7 @@ import { ProductIcon } from "@/components/products/ProductIcons";
 
 type ProductCarouselProps = {
   activeIndex: number;
+  showScrollHint: boolean;
   onSelect: (index: number) => void;
   onPrevious: () => void;
   onNext: () => void;
@@ -21,6 +22,7 @@ function wrappedDistance(index: number, activeIndex: number, length: number) {
 
 export function ProductCarousel({
   activeIndex,
+  showScrollHint,
   onSelect,
   onPrevious,
   onNext,
@@ -28,7 +30,7 @@ export function ProductCarousel({
   return (
     <aside className="relative hidden min-h-[620px] xl:block" aria-label="Products carousel">
       <svg
-        className="absolute inset-y-0 left-0 h-full w-72"
+        className="absolute inset-y-0 left-8 h-full w-72"
         viewBox="0 0 280 700"
         fill="none"
         aria-hidden="true"
@@ -42,19 +44,19 @@ export function ProductCarousel({
       <button
         type="button"
         onClick={onPrevious}
-        className="absolute left-10 top-2 z-50 flex h-10 w-10 items-center justify-center rounded-full border border-consultx-border bg-white shadow-soft transition hover:border-consultx-green"
+        className="absolute left-16 top-2 z-50 flex h-10 w-10 items-center justify-center rounded-full border border-consultx-border bg-white shadow-soft transition hover:border-consultx-green"
         aria-label="Previous product"
       >
         <ChevronUp className="h-5 w-5 text-consultx-grey" />
       </button>
 
-      <div className="absolute inset-0">
+      <div className="absolute inset-0 left-8">
         {products.map((product, index) => {
           const distance = wrappedDistance(index, activeIndex, products.length);
           if (Math.abs(distance) > 3) return null;
 
           const y = 300 + distance * 115;
-          const x = 165 - Math.pow(distance, 2) * 11;
+          const x = 175 - Math.pow(distance, 2) * 11;
           const scale = distance === 0 ? 1.28 : Math.max(0.74, 1 - Math.abs(distance) * 0.09);
           const opacity = Math.max(0.45, 1 - Math.abs(distance) * 0.16);
           const active = distance === 0;
@@ -90,20 +92,25 @@ export function ProductCarousel({
       <button
         type="button"
         onClick={onNext}
-        className="absolute bottom-2 left-10 z-50 flex h-10 w-10 items-center justify-center rounded-full border border-consultx-border bg-white shadow-soft transition hover:border-consultx-green"
+        className="absolute bottom-2 left-16 z-50 flex h-10 w-10 items-center justify-center rounded-full border border-consultx-border bg-white shadow-soft transition hover:border-consultx-green"
         aria-label="Next product"
       >
         <ChevronDown className="h-5 w-5 text-consultx-grey" />
       </button>
 
-      <div className="absolute left-2 top-1/2 -translate-y-1/2 text-center text-xs leading-5 text-consultx-grey">
-        <div className="mb-2 text-base">↑</div>
-        <div>
+      <div
+        className={`pointer-events-none absolute top-1/2 left-0 z-[40] w-[4.5rem] -translate-y-1/2 text-center text-[11px] leading-4 text-consultx-grey transition-all duration-300 ${
+          showScrollHint ? "translate-x-0 opacity-100" : "-translate-x-2 opacity-0"
+        }`}
+        aria-hidden={!showScrollHint}
+      >
+        <div className="mb-2 text-sm">↑</div>
+        <div className="rounded-md bg-white/90 px-1 py-1 backdrop-blur-[2px]">
           Scroll to
           <br />
           explore
         </div>
-        <div className="mt-2 text-base">↓</div>
+        <div className="mt-2 text-sm">↓</div>
       </div>
     </aside>
   );

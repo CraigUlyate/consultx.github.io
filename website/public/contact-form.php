@@ -86,10 +86,19 @@ $headers = [
   'X-Mailer: ConsultX-Contact/1.0',
 ];
 
-$to = implode(', ', $recipients);
-$sent = @mail($to, '=?UTF-8?B?' . base64_encode($subject) . '?=', $body, implode("\r\n", $headers));
+// Afrihost/shared PHP mail often drops extra addresses when To is comma-separated.
+// Send one message per recipient so both mailboxes get a copy.
+$encodedSubject = '=?UTF-8?B?' . base64_encode($subject) . '?=';
+$headerBlock = implode("\r\n", $headers);
+$sentCount = 0;
 
-if (!$sent) {
+foreach ($recipients as $to) {
+  if (@mail($to, $encodedSubject, $body, $headerBlock)) {
+    $sentCount++;
+  }
+}
+
+if ($sentCount === 0) {
   respond(500, 'We could not send your message right now. Please email info@consultx.co.za.');
 }
 

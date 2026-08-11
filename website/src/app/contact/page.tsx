@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Mail, MessageCircle, Phone } from "lucide-react";
+import { ContactForm } from "@/components/contact/ContactForm";
 
 export const metadata: Metadata = {
   title: "Contact",
@@ -43,44 +44,7 @@ export default function ContactPage() {
         </div>
       </div>
 
-      <form className="space-y-4 rounded-3xl border border-consultx-border bg-white p-8 shadow-soft">
-        <label className="block">
-          <span className="mb-2 block text-sm font-semibold text-consultx-charcoal">Name</span>
-          <input
-            type="text"
-            name="name"
-            className="w-full rounded-md border border-consultx-border px-4 py-3 outline-none focus:border-consultx-green"
-            placeholder="Your name"
-          />
-        </label>
-        <label className="block">
-          <span className="mb-2 block text-sm font-semibold text-consultx-charcoal">Email</span>
-          <input
-            type="email"
-            name="email"
-            className="w-full rounded-md border border-consultx-border px-4 py-3 outline-none focus:border-consultx-green"
-            placeholder="you@company.co.za"
-          />
-        </label>
-        <label className="block">
-          <span className="mb-2 block text-sm font-semibold text-consultx-charcoal">Message</span>
-          <textarea
-            name="message"
-            rows={5}
-            className="w-full rounded-md border border-consultx-border px-4 py-3 outline-none focus:border-consultx-green"
-            placeholder="What would you like to discuss?"
-          />
-        </label>
-        <button
-          type="submit"
-          className="w-full rounded-md bg-consultx-green px-7 py-4 font-semibold text-white transition hover:bg-consultx-green-dark"
-        >
-          Send Message
-        </button>
-        <p className="text-xs leading-5 text-consultx-grey">
-          This form is front-end only for now. Wire it to your Afrihost mail handler or CRM when ready.
-        </p>
-      </form>
+      <ContactForm />
     </section>
   );
 }

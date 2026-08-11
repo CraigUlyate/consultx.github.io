@@ -24,10 +24,10 @@ export const services: Service[] = [
     slug: "process-reengineering",
     title: "Process Re-engineering",
     shortDescription:
-      "Redesign finance and operational workflows to remove friction, improve speed and create cleaner handovers.",
+      "Cut corporate finance operating costs by up to 50% — initial assessment, solution roadmap, ERP-agnostic task automation with rigorous controls.",
     seoTitle: "Process Re-engineering",
     seoDescription:
-      "ConsultX process re-engineering for finance and operations — streamline workflows, reduce waste and improve control.",
+      "ConsultX process re-engineering to cut corporate finance operating costs by up to 50%, with assessment, roadmap and ERP-agnostic automation.",
     ctaLabel: "Improve your processes",
     order: 2,
   },
@@ -35,10 +35,10 @@ export const services: Service[] = [
     slug: "business-consulting",
     title: "Business Consulting",
     shortDescription:
-      "Practical commercial guidance for growth, investment decisions, restructuring and operational improvement.",
+      "Practical consulting to cut finance operating costs by up to 50% — assessment, roadmap, ERP-agnostic automation and rigorous controls.",
     seoTitle: "Business Consulting",
     seoDescription:
-      "ConsultX business consulting for strategy, commercial analysis and practical execution support.",
+      "ConsultX business consulting focused on cutting corporate finance costs by up to 50% with assessment, roadmap and controlled automation.",
     ctaLabel: "Book a consulting session",
     order: 3,
   },

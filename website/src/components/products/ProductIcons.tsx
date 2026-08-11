@@ -29,6 +29,7 @@ const productIcons: Record<string, LucideIcon> = {
 
 const productLogos: Record<string, string> = {
   "anna-expense": "/assets/products/anna-expense.png",
+  "iris-carbon-xbrl": "/assets/products/iris-carbon-logo.png",
   fastleads: "/assets/products/fastleads.png",
 };
 

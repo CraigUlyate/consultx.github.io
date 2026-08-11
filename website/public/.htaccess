@@ -1,0 +1,8 @@
+# ConsultX static export — keep HTML fresh; hashed assets can cache long-term.
+<IfModule mod_headers.c>
+  Header set Cache-Control "public, max-age=0, must-revalidate"
+
+  <FilesMatch "\.(?:js|css|woff2?|ttf|otf|eot|png|jpe?g|gif|svg|webp|ico|map)$">
+    Header set Cache-Control "public, max-age=31536000, immutable"
+  </FilesMatch>
+</IfModule>

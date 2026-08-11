@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { AnimatePresence, motion } from "framer-motion";
 import { Check } from "lucide-react";
 import type { Product } from "@/lib/types";
@@ -58,8 +57,10 @@ export function ProductDetails({ product }: ProductDetailsProps) {
                 <span aria-hidden="true">→</span>
               </a>
             ) : null}
-            <Link
+            {/* Plain <a> so CTA always follows product.href (avoids stale Next Link client cache). */}
+            <a
               href={product.href}
+              data-product-id={product.id}
               className={`inline-flex items-center gap-3 rounded-md px-7 py-4 font-semibold transition hover:-translate-y-0.5 ${
                 product.tryItHref
                   ? "border border-consultx-border text-consultx-charcoal hover:border-consultx-green hover:text-consultx-green-dark"
@@ -68,7 +69,7 @@ export function ProductDetails({ product }: ProductDetailsProps) {
             >
               {product.cta}
               <span aria-hidden="true">→</span>
-            </Link>
+            </a>
           </div>
         </motion.div>
       </AnimatePresence>

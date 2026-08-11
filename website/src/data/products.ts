@@ -190,8 +190,8 @@ export const products: Product[] = [
       "Scenario Analysis",
       "Expert Analysis",
     ],
-    cta: "Learn More",
-    href: "/contact/",
+    cta: "View Valuations",
+    href: "/services/business-valuations/",
     workflowTitle: "Valuation Process",
     workflow: [
       {
@@ -315,15 +315,15 @@ export const products: Product[] = [
     category: "SME Workflow & Business Process Automation",
     status: "Concept",
     description:
-      "A lightweight workflow orchestration platform for finance and operational processes.",
+      "Cut corporate finance operating costs by up to 50% — assessment, roadmap, ERP-agnostic task automation with rigorous controls.",
     features: [
-      "Workflow Scheduling",
-      "Dependencies",
-      "Rerun & Recovery",
-      "Operational Monitoring",
+      "Initial Assessment",
+      "Solution Roadmap",
+      "ERP Agnostic Automation",
+      "Controls & Checks",
     ],
-    cta: "Concept",
-    href: "/contact/",
+    cta: "Explore Solutions",
+    href: "/products/workflow-automation/",
     workflowTitle: "Automation Path",
     workflow: [
       {

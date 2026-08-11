@@ -18,6 +18,9 @@ export const metadata: Metadata = {
   },
   description:
     "ConsultX helps businesses unlock efficiency through financial management, process re-engineering, consulting and intelligent product tools.",
+  icons: {
+    icon: "/favicon.png",
+  },
 };
 
 export default function RootLayout({

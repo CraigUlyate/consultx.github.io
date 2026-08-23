@@ -1,82 +1,253 @@
 "use client";
 
+import gsap from "gsap";
 import Link from "next/link";
-import { ArrowRight } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { HeroBackgroundVideo } from "@/components/home/HeroBackgroundVideo";
+import "./hero-slides.css";
 
-const TEXT_HOLD_MS = 3_000;
-const TEXT_SLIDE_MS = 700;
+const FREEZE_MS = 10_000;
+
+type HeroSlide = {
+  id: string;
+  kicker: string;
+  titleLine1: string;
+  titleLine2: string;
+  body: string;
+  cta: string;
+  href: string;
+  videoSrc: string;
+  playbackRate?: number;
+  videoObjectClass: string;
+};
+
+const slides: HeroSlide[] = [
+  {
+    id: "business-science",
+    kicker: "Chartered Accountant · Consulting · AI",
+    titleLine1: "It's not rocket science,",
+    titleLine2: "it's business science.",
+    body: "Unlock efficiency across finance and operations with consulting expertise and intelligent product tools built for South African businesses.",
+    cta: "Explore Products",
+    href: "/products/",
+    videoSrc: "/assets/hero-background.mp4",
+    playbackRate: 2,
+    videoObjectClass: "object-cover",
+  },
+  {
+    id: "automation",
+    kicker: "Finance Automation",
+    titleLine1: "Automate the work.",
+    titleLine2: "Keep the control.",
+    body: "Practical AI and automation solutions for modern finance teams — designed around how your business actually operates.",
+    cta: "Explore Solutions",
+    href: "/products/workflow-automation/",
+    videoSrc: "/assets/hero-take-your-shot.mp4",
+    videoObjectClass: "object-contain md:object-cover",
+  },
+];
 
 export function HeroSection() {
-  const [exited, setExited] = useState(false);
-  const [sliding, setSliding] = useState(false);
-  const holdTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const enableSlideTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const slideRefs = useRef<(HTMLElement | null)[]>([]);
+  const bgRefs = useRef<(HTMLElement | null)[]>([]);
+  const videoRefs = useRef<(HTMLVideoElement | null)[]>([]);
+  const currentRef = useRef(0);
+  const timelineRef = useRef<gsap.core.Timeline | null>(null);
+  const freezeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const reduceMotionRef = useRef(false);
+  const [activeIndex, setActiveIndex] = useState(0);
 
-  const clearHoldTimer = useCallback(() => {
-    if (holdTimerRef.current) {
-      clearTimeout(holdTimerRef.current);
-      holdTimerRef.current = null;
-    }
-    if (enableSlideTimerRef.current) {
-      clearTimeout(enableSlideTimerRef.current);
-      enableSlideTimerRef.current = null;
+  const clearFreeze = useCallback(() => {
+    if (freezeTimerRef.current) {
+      clearTimeout(freezeTimerRef.current);
+      freezeTimerRef.current = null;
     }
   }, []);
 
-  const handleCycleStart = useCallback(() => {
-    clearHoldTimer();
-    // Snap text back on-screen without a reverse slide.
-    setSliding(false);
-    setExited(false);
+  const animateContentIn = useCallback((slide: HTMLElement) => {
+    const elements = slide.querySelectorAll<HTMLElement>("[data-hero-animate]");
+    gsap.fromTo(
+      elements,
+      { opacity: 0, y: 26 },
+      {
+        opacity: 1,
+        y: 0,
+        duration: 0.85,
+        stagger: 0.1,
+        ease: "power3.out",
+        overwrite: "auto",
+      },
+    );
+  }, []);
 
-    enableSlideTimerRef.current = setTimeout(() => {
-      setSliding(true);
-    }, 50);
+  const prepareSlides = useCallback(() => {
+    slideRefs.current.forEach((slide, index) => {
+      if (!slide) return;
+      gsap.set(slide, { autoAlpha: index === 0 ? 1 : 0, zIndex: index === 0 ? 2 : 1 });
+      const bg = bgRefs.current[index];
+      if (bg) gsap.set(bg, { scale: index === 0 ? 1 : 1.04 });
+    });
+  }, []);
 
-    holdTimerRef.current = setTimeout(() => {
-      setExited(true);
-    }, TEXT_HOLD_MS);
-  }, [clearHoldTimer]);
+  const playVideo = useCallback((index: number) => {
+    videoRefs.current.forEach((video, i) => {
+      if (!video) return;
+      if (i === index) {
+        video.currentTime = 0;
+        const rate = slides[i]?.playbackRate ?? 1;
+        video.playbackRate = rate;
+        void video.play().catch(() => {});
+      } else {
+        video.pause();
+        video.currentTime = 0;
+      }
+    });
+  }, []);
+
+  const transitionTo = useCallback(
+    (nextIndex: number) => {
+      const oldSlide = slideRefs.current[currentRef.current];
+      const newSlide = slideRefs.current[nextIndex];
+      const oldBg = bgRefs.current[currentRef.current];
+      const newBg = bgRefs.current[nextIndex];
+      if (!oldSlide || !newSlide || !oldBg || !newBg) return;
+
+      timelineRef.current?.kill();
+
+      if (reduceMotionRef.current) {
+        gsap.set(oldSlide, { autoAlpha: 0, zIndex: 1 });
+        gsap.set(newSlide, { autoAlpha: 1, zIndex: 2 });
+        gsap.set(oldBg, { scale: 1 });
+        gsap.set(newBg, { scale: 1 });
+        currentRef.current = nextIndex;
+        setActiveIndex(nextIndex);
+        playVideo(nextIndex);
+        return;
+      }
+
+      gsap.set(newSlide, { autoAlpha: 1, zIndex: 2, opacity: 0 });
+      gsap.set(oldSlide, { zIndex: 1 });
+      gsap.set(newBg, { scale: 1.04 });
+
+      playVideo(nextIndex);
+
+      const tl = gsap.timeline({
+        defaults: { overwrite: "auto" },
+        onComplete: () => {
+          gsap.set(oldSlide, { autoAlpha: 0 });
+        },
+      });
+      timelineRef.current = tl;
+
+      tl.fromTo(newSlide, { opacity: 0 }, { opacity: 1, duration: 1.25, ease: "power2.inOut" }, 0);
+      tl.to(newBg, { scale: 1, duration: 1.8, ease: "power2.out" }, 0);
+      tl.to(oldBg, { scale: 1.035, duration: 1.35, ease: "power2.inOut" }, 0);
+      tl.to(oldSlide, { opacity: 0, duration: 1.15, ease: "power2.inOut" }, 0);
+      tl.call(() => animateContentIn(newSlide), undefined, 0.35);
+
+      currentRef.current = nextIndex;
+      setActiveIndex(nextIndex);
+    },
+    [animateContentIn, playVideo],
+  );
+
+  const handleVideoEnded = useCallback(
+    (index: number) => {
+      if (index !== currentRef.current) return;
+
+      if (index < slides.length - 1) {
+        transitionTo(index + 1);
+        return;
+      }
+
+      clearFreeze();
+      freezeTimerRef.current = setTimeout(() => {
+        transitionTo(0);
+      }, FREEZE_MS);
+    },
+    [clearFreeze, transitionTo],
+  );
 
   useEffect(() => {
-    return () => {
-      clearHoldTimer();
+    const media = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const sync = () => {
+      reduceMotionRef.current = media.matches;
     };
-  }, [clearHoldTimer]);
+    sync();
+    media.addEventListener("change", sync);
 
-  const slideStyle = {
-    transform: exited ? "translateX(-110%)" : "translateX(0)",
-    transition: sliding ? `transform ${TEXT_SLIDE_MS}ms ease-in-out` : "none",
-  };
+    prepareSlides();
+    playVideo(0);
+    const first = slideRefs.current[0];
+    if (first && !media.matches) {
+      animateContentIn(first);
+    }
+
+    const slidesAtMount = slideRefs.current.filter(Boolean);
+    const bgsAtMount = bgRefs.current.filter(Boolean);
+
+    return () => {
+      media.removeEventListener("change", sync);
+      clearFreeze();
+      timelineRef.current?.kill();
+      gsap.killTweensOf(slidesAtMount);
+      gsap.killTweensOf(bgsAtMount);
+    };
+  }, [animateContentIn, clearFreeze, playVideo, prepareSlides]);
 
   return (
-    <section className="relative overflow-hidden bg-[linear-gradient(135deg,#ffffff_0%,#f5f6f7_48%,#f1f8e8_100%)]">
-      <div className="absolute inset-0">
-        <HeroBackgroundVideo onCycleStart={handleCycleStart} />
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_80%_20%,rgba(114,198,0,0.16),transparent_42%)]" />
-      </div>
-      <div className="relative mx-auto flex min-h-[72vh] max-w-[1500px] flex-col justify-center px-5 py-20 md:px-8">
-        <div className="will-change-transform" style={slideStyle}>
-          <h1 className="mt-5 max-w-4xl text-4xl font-extrabold tracking-tight text-consultx-black sm:text-5xl lg:text-6xl">
-            It&apos;s not rocket science,
-            <span className="block text-consultx-green">it&apos;s business science.</span>
-          </h1>
-          <p className="mt-6 max-w-2xl text-lg leading-8 text-gray-700">
-            Unlock efficiency across finance and operations with consulting expertise and
-            intelligent product tools built for South African businesses.
-          </p>
-        </div>
-        <div className="mt-10">
-          <Link
-            href="/products/"
-            className="inline-flex items-center gap-2 rounded-md bg-consultx-green px-7 py-4 font-semibold text-white transition hover:-translate-y-0.5 hover:bg-consultx-green-dark"
+    <section className="cx-hero" aria-roledescription="carousel" aria-label="ConsultX highlights">
+      {slides.map((slide, index) => (
+        <article
+          key={slide.id}
+          className="hero-slide"
+          ref={(node) => {
+            slideRefs.current[index] = node;
+          }}
+          aria-hidden={index !== activeIndex}
+        >
+          <div
+            className="hero-bg"
+            ref={(node) => {
+              bgRefs.current[index] = node;
+            }}
           >
-            Explore Products <ArrowRight className="h-4 w-4" />
-          </Link>
-        </div>
-      </div>
+            <video
+              ref={(node) => {
+                videoRefs.current[index] = node;
+              }}
+              className={`h-full w-full opacity-50 ${slide.videoObjectClass}`}
+              muted
+              playsInline
+              preload="auto"
+              onLoadedMetadata={(event) => {
+                if (slide.playbackRate) {
+                  event.currentTarget.playbackRate = slide.playbackRate;
+                }
+              }}
+              onEnded={() => handleVideoEnded(index)}
+            >
+              <source src={slide.videoSrc} type="video/mp4" />
+            </video>
+          </div>
+
+          <div className="hero-overlay" />
+
+          <div className="hero-content">
+            <span className="hero-kicker" data-hero-animate>
+              {slide.kicker}
+            </span>
+            <h1 data-hero-animate>
+              {slide.titleLine1}
+              <span className="block text-consultx-green">{slide.titleLine2}</span>
+            </h1>
+            <p data-hero-animate>{slide.body}</p>
+            <Link href={slide.href} className="hero-button" data-hero-animate>
+              {slide.cta}
+              <span aria-hidden="true">→</span>
+            </Link>
+          </div>
+        </article>
+      ))}
     </section>
   );
 }

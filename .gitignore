@@ -1,0 +1,31 @@
+# Secrets
+.env
+.env.*
+!.env*.example
+**/.env
+**/.env.local
+!**/.env*.example
+
+# Dependencies and build output
+node_modules/
+.next/
+out/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+*.log
+
+# Personal and local-only materials — do not publish
+Examples/CVs/
+Examples/*.mp4
+Examples/*.doc
+Examples/*.docx
+
+# Legacy WordPress leftovers at the workspace root
+/functions (1).php
+/main.js
+/page-bid-window.php
+/page-dashbaord.php
+/sign-up.php
+/style.css

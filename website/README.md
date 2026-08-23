@@ -2,6 +2,10 @@
 
 Next.js + Tailwind CSS + Framer Motion site for ConsultX, featuring the Products semi-circular carousel.
 
+Canonical repository: https://github.com/CraigUlyate/consultx.github.io
+
+Developer workflow (clone, update, GitHub, Afrihost): [`../DEVELOPER_INSTRUCTIONS.md`](../DEVELOPER_INSTRUCTIONS.md).
+
 ## Develop
 
 ```bash

@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
-import { BrevlytFeatureAnimation } from "@/components/blog/BrevlytFeatureAnimation";
 import { blogPosts } from "@/data/blog";
 
 export const metadata: Metadata = {
@@ -38,7 +37,16 @@ export default function BlogPage() {
         >
           <div className="relative aspect-[21/9] overflow-hidden bg-consultx-light-grey sm:aspect-[2.4/1]">
             {isBrevlytFeature ? (
-              <BrevlytFeatureAnimation />
+              <video
+                className="absolute inset-0 h-full w-full object-cover"
+                src="/assets/products/Brevlyt_vid.mp4"
+                autoPlay
+                loop
+                muted
+                playsInline
+                preload="metadata"
+                aria-hidden="true"
+              />
             ) : (
               <Image
                 src={featured.coverImage}
@@ -61,7 +69,7 @@ export default function BlogPage() {
                 {featured.excerpt}
               </p>
               <p className="mt-5 text-sm font-semibold text-consultx-green">
-                Read article →
+                Read article -&gt;
               </p>
             </div>
           </div>
@@ -75,7 +83,7 @@ export default function BlogPage() {
             <>
               <div className="flex flex-wrap items-center gap-3 text-sm text-consultx-grey">
                 <time dateTime={post.date}>{formatDate(post.date)}</time>
-                <span aria-hidden>•</span>
+                <span aria-hidden>&bull;</span>
                 <span>{post.readTime}</span>
               </div>
               <h2 className="mt-3 text-2xl font-bold text-consultx-black transition group-hover:text-consultx-green-dark">
@@ -83,7 +91,7 @@ export default function BlogPage() {
               </h2>
               <p className="mt-3 max-w-3xl leading-7 text-gray-600">{post.excerpt}</p>
               <span className="mt-4 inline-flex font-semibold text-consultx-green">
-                {published ? "Read article →" : "Coming soon"}
+                {published ? "Read article ->" : "Coming soon"}
               </span>
             </>
           );

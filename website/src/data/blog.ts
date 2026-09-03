@@ -70,7 +70,9 @@ export function getPublishedPosts() {
 }
 
 export function getAllBlogSlugs() {
-  return getPublishedPosts().map((post) => post.slug);
+  return getPublishedPosts()
+    .filter((post) => post.slug !== "brevlyt-ai-cfo-south-africa")
+    .map((post) => post.slug);
 }
 
 export function getBlogPostBySlug(slug: string) {

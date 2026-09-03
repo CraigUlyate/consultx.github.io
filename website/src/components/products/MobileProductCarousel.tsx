@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { products } from "@/data/products";
+import { products } from "@/data/productCatalog";
 import { ProductIcon } from "@/components/products/ProductIcons";
 
 type MobileProductCarouselProps = {

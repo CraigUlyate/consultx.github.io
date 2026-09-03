@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { products } from "@/data/products";
+import { products } from "@/data/productCatalog";
 import { ProductCarousel } from "@/components/products/ProductCarousel";
 import { MobileProductCarousel } from "@/components/products/MobileProductCarousel";
 import { ProductDetails } from "@/components/products/ProductDetails";
@@ -36,7 +36,6 @@ export function ProductShowcase() {
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
-      // Vertical carousel keys only on desktop layout.
       if (window.innerWidth < DESKTOP_CAROUSEL_MIN) return;
       if (event.key === "ArrowDown") {
         event.preventDefault();
@@ -56,7 +55,6 @@ export function ProductShowcase() {
 
   useEffect(() => {
     const onWheelNav = (event: WheelEvent) => {
-      // Wheel switches products only for the desktop semi-circular carousel.
       if (window.innerWidth < DESKTOP_CAROUSEL_MIN || wheelLocked) return;
       setWheelLocked(true);
       dismissHint();

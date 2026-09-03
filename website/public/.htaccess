@@ -1,4 +1,9 @@
 # ConsultX static export — keep HTML fresh; hashed assets can cache long-term.
+# Explicitly force UTF-8 so punctuation such as em dashes and curly apostrophes
+# is not decoded as Windows-1252 by the hosting layer.
+AddDefaultCharset UTF-8
+AddCharset UTF-8 .html .htm .css .js .json .svg .txt .xml
+
 <IfModule mod_headers.c>
   Header set Cache-Control "public, max-age=0, must-revalidate"
 

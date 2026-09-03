@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Check, Eye, Search, TrendingUp } from "lucide-react";
+import { Eye, Search, TrendingUp } from "lucide-react";
+import { BrevlytPanelAnimation } from "@/components/products/BrevlytPanelAnimation";
 
 export const metadata: Metadata = {
   title: "Brevlyt AI CFO",
@@ -59,31 +60,7 @@ export default function BrevlytProductPage() {
           </div>
 
           <div className="rounded-[30px] bg-white p-4 shadow-[0_28px_75px_rgba(29,42,72,.12)] md:p-5">
-            <div className="overflow-hidden rounded-[20px] border border-[#eceef2] bg-white">
-              <div className="flex h-11 items-center gap-2 bg-[#f0f1f3] px-4">
-                <span className="h-2.5 w-2.5 rounded-full bg-[#d3d6da]" />
-                <span className="h-2.5 w-2.5 rounded-full bg-[#d3d6da]" />
-                <span className="h-2.5 w-2.5 rounded-full bg-[#d3d6da]" />
-                <div className="ml-2 flex-1 rounded-lg bg-white px-3 py-1 text-xs text-[#9aa0a8]">
-                  app.brevlyt.com
-                </div>
-              </div>
-              <div className="p-6 md:p-8">
-                <div className="rounded-2xl border border-[#e7e9ed] p-5">
-                  <p className="text-xs font-bold tracking-[0.12em] text-[#4c6fe7] uppercase">Finding</p>
-                  <h2 className="mt-2 text-2xl font-bold">Margin pressure detected</h2>
-                  <div className="mt-5 space-y-3 text-sm leading-6 text-[#626a78]">
-                    <p>Gross margin has declined despite stable revenue.</p>
-                    <p>Collections are slowing while input costs are increasing.</p>
-                  </div>
-                  <div className="mt-5 flex gap-3 rounded-xl bg-[#f5f8ff] p-4 text-sm text-[#44516a]">
-                    <Check className="mt-0.5 h-4 w-4 shrink-0 text-[#315fd9]" />
-                    Review pricing, supplier terms and working-capital drivers.
-                  </div>
-                </div>
-                <div className="mt-4 rounded-xl border border-[#e4e7eb] px-4 py-3 text-sm text-[#a0a6ae]">Ask your CFO →</div>
-              </div>
-            </div>
+            <BrevlytPanelAnimation />
           </div>
         </div>
       </section>

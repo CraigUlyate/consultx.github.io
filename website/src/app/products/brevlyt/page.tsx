@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Eye, Search, TrendingUp } from "lucide-react";
+import { Check, Eye, Search, TrendingUp } from "lucide-react";
 
 export const metadata: Metadata = {
   title: "Brevlyt AI CFO",
@@ -24,6 +24,24 @@ const featureCards = [
     title: "Turns insight into action",
     text: "Surface recommendations, alerts and follow-ups so management can focus on decisions rather than data hunting.",
   },
+];
+
+const ownerItems = [
+  "Cash and runway monitoring",
+  "Early warning of financial risks",
+  "Recommended next actions",
+];
+
+const financeItems = [
+  "Variance and anomaly investigation",
+  "Forecasting and scenario analysis",
+  "Proactive insights and follow-ups",
+];
+
+const growthItems = [
+  "Large datasets",
+  "Custom business context",
+  "Deeper agentic workflows",
 ];
 
 export default function BrevlytProductPage() {
@@ -77,8 +95,11 @@ export default function BrevlytProductPage() {
       <section className="mx-auto max-w-[1180px] px-5 pb-20 md:px-8">
         <div className="grid gap-5 md:grid-cols-3">
           {featureCards.map(({ icon: Icon, title, text }) => (
-            <div key={title} className="rounded-[28px] bg-white p-7 shadow-[0_18px_45px_rgba(29,42,72,.055)]">
-              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[#e8eefc] text-[#315fd9]">
+            <div
+              key={title}
+              className="group rounded-[28px] bg-white p-7 shadow-[0_18px_45px_rgba(29,42,72,.055)] transition-all duration-300 ease-out hover:-translate-y-1.5 hover:shadow-[0_28px_65px_rgba(29,42,72,.12)]"
+            >
+              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[#e8eefc] text-[#315fd9] transition-transform duration-300 ease-out group-hover:scale-110">
                 <Icon className="h-5 w-5" />
               </div>
               <h2 className="mt-6 text-2xl font-bold tracking-[-0.02em]">{title}</h2>
@@ -95,34 +116,51 @@ export default function BrevlytProductPage() {
         </div>
 
         <div className="mt-10 grid gap-6 md:grid-cols-3">
-          <div className="rounded-[30px] bg-[linear-gradient(145deg,#3f65d8,#6f8ff6)] p-8 text-white">
+          <div className="group rounded-[30px] bg-[linear-gradient(145deg,#3f65d8,#6f8ff6)] p-8 text-white shadow-[0_18px_45px_rgba(63,101,216,.12)] transition-all duration-300 ease-out hover:-translate-y-2 hover:shadow-[0_30px_72px_rgba(63,101,216,.24)]">
             <p className="text-xs font-bold tracking-[0.14em] text-white/80 uppercase">For business owners</p>
             <h3 className="mt-6 text-3xl font-extrabold">Stay lean. Move fast.</h3>
             <p className="mt-4 leading-7 text-white/85">Stay on top of performance without wasting time in spreadsheets.</p>
             <ul className="mt-6 space-y-3 text-sm text-white/90">
-              <li>Cash and runway monitoring</li>
-              <li>Early warning of financial risks</li>
-              <li>Recommended next actions</li>
+              {ownerItems.map((item) => (
+                <li key={item} className="flex items-center gap-3">
+                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-white/95 text-[#4269df] transition-transform duration-300 ease-out group-hover:scale-110">
+                    <Check className="h-3.5 w-3.5" strokeWidth={3} />
+                  </span>
+                  <span>{item}</span>
+                </li>
+              ))}
             </ul>
           </div>
-          <div className="rounded-[30px] bg-white p-8 shadow-[0_18px_45px_rgba(29,42,72,.055)]">
+
+          <div className="group rounded-[30px] bg-white p-8 shadow-[0_18px_45px_rgba(29,42,72,.055)] transition-all duration-300 ease-out hover:-translate-y-2 hover:shadow-[0_30px_72px_rgba(29,42,72,.13)]">
             <p className="text-xs font-bold tracking-[0.14em] text-[#465064] uppercase">For finance teams</p>
             <h3 className="mt-6 text-3xl font-extrabold">Scale without complexity.</h3>
             <p className="mt-4 leading-7 text-[#596273]">Spend less time gathering and explaining data, and more time making decisions.</p>
             <ul className="mt-6 space-y-3 text-sm text-[#465064]">
-              <li>Variance and anomaly investigation</li>
-              <li>Forecasting and scenario analysis</li>
-              <li>Proactive insights and follow-ups</li>
+              {financeItems.map((item) => (
+                <li key={item} className="flex items-center gap-3">
+                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#4269df] text-white transition-transform duration-300 ease-out group-hover:scale-110">
+                    <Check className="h-3.5 w-3.5" strokeWidth={3} />
+                  </span>
+                  <span>{item}</span>
+                </li>
+              ))}
             </ul>
           </div>
-          <div className="rounded-[30px] bg-white p-8 shadow-[0_18px_45px_rgba(29,42,72,.055)]">
+
+          <div className="group rounded-[30px] bg-white p-8 shadow-[0_18px_45px_rgba(29,42,72,.055)] transition-all duration-300 ease-out hover:-translate-y-2 hover:shadow-[0_30px_72px_rgba(29,42,72,.13)]">
             <p className="text-xs font-bold tracking-[0.14em] text-[#465064] uppercase">As you grow</p>
             <h3 className="mt-6 text-3xl font-extrabold">Full visibility at scale.</h3>
             <p className="mt-4 leading-7 text-[#596273]">Brevlyt grows with the complexity of your business.</p>
             <ul className="mt-6 space-y-3 text-sm text-[#465064]">
-              <li>Large datasets</li>
-              <li>Custom business context</li>
-              <li>Deeper agentic workflows</li>
+              {growthItems.map((item) => (
+                <li key={item} className="flex items-center gap-3">
+                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#4269df] text-white transition-transform duration-300 ease-out group-hover:scale-110">
+                    <Check className="h-3.5 w-3.5" strokeWidth={3} />
+                  </span>
+                  <span>{item}</span>
+                </li>
+              ))}
             </ul>
           </div>
         </div>

@@ -11,6 +11,17 @@ export type BlogPostMeta = {
 
 export const blogPosts: BlogPostMeta[] = [
   {
+    slug: "brevlyt-ai-cfo-south-africa",
+    title: "ConsultX Partners with Brevlyt to Bring Autonomous CFO AI to South Africa",
+    excerpt:
+      "ConsultX has partnered with Brevlyt to bring continuous AI-powered CFO intelligence to the South African market.",
+    date: "2026-09-03",
+    readTime: "10 min read",
+    coverImage: "/blog/brevlyt-ai-cfo-south-africa/cover.svg",
+    coverAlt: "ConsultX and Brevlyt autonomous AI CFO partnership announcement",
+    tags: ["Brevlyt", "AI CFO", "Finance", "South Africa"],
+  },
+  {
     slug: "ai-supported-automation-falling-behind",
     title: "If You’re Not Implementing AI-Supported Automation, You’re Falling Behind",
     excerpt:

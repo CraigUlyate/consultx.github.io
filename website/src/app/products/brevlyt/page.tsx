@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Eye, Search, TrendingUp } from "lucide-react";
-import { BrevlytPanelAnimation } from "@/components/products/BrevlytPanelAnimation";
 
 export const metadata: Metadata = {
   title: "Brevlyt AI CFO",
@@ -59,8 +58,18 @@ export default function BrevlytProductPage() {
             </div>
           </div>
 
-          <div className="rounded-[30px] bg-white p-4 shadow-[0_28px_75px_rgba(29,42,72,.12)] md:p-5">
-            <BrevlytPanelAnimation />
+          <div className="overflow-hidden rounded-[30px] bg-white p-4 shadow-[0_28px_75px_rgba(29,42,72,.12)] md:p-5">
+            <div className="overflow-hidden rounded-[20px] border border-[#eceef2] bg-white">
+              <video
+                className="block h-full w-full object-cover"
+                src="/assets/products/Brevlyt_vid.mp4"
+                autoPlay
+                loop
+                muted
+                playsInline
+                preload="metadata"
+              />
+            </div>
           </div>
         </div>
       </section>
@@ -91,9 +100,9 @@ export default function BrevlytProductPage() {
             <h3 className="mt-6 text-3xl font-extrabold">Stay lean. Move fast.</h3>
             <p className="mt-4 leading-7 text-white/85">Stay on top of performance without wasting time in spreadsheets.</p>
             <ul className="mt-6 space-y-3 text-sm text-white/90">
-              <li>✓ Cash and runway monitoring</li>
-              <li>✓ Early warning of financial risks</li>
-              <li>✓ Recommended next actions</li>
+              <li>Cash and runway monitoring</li>
+              <li>Early warning of financial risks</li>
+              <li>Recommended next actions</li>
             </ul>
           </div>
           <div className="rounded-[30px] bg-white p-8 shadow-[0_18px_45px_rgba(29,42,72,.055)]">
@@ -101,9 +110,9 @@ export default function BrevlytProductPage() {
             <h3 className="mt-6 text-3xl font-extrabold">Scale without complexity.</h3>
             <p className="mt-4 leading-7 text-[#596273]">Spend less time gathering and explaining data, and more time making decisions.</p>
             <ul className="mt-6 space-y-3 text-sm text-[#465064]">
-              <li>✓ Variance and anomaly investigation</li>
-              <li>✓ Forecasting and scenario analysis</li>
-              <li>✓ Proactive insights and follow-ups</li>
+              <li>Variance and anomaly investigation</li>
+              <li>Forecasting and scenario analysis</li>
+              <li>Proactive insights and follow-ups</li>
             </ul>
           </div>
           <div className="rounded-[30px] bg-white p-8 shadow-[0_18px_45px_rgba(29,42,72,.055)]">
@@ -111,9 +120,9 @@ export default function BrevlytProductPage() {
             <h3 className="mt-6 text-3xl font-extrabold">Full visibility at scale.</h3>
             <p className="mt-4 leading-7 text-[#596273]">Brevlyt grows with the complexity of your business.</p>
             <ul className="mt-6 space-y-3 text-sm text-[#465064]">
-              <li>✓ Large datasets</li>
-              <li>✓ Custom business context</li>
-              <li>✓ Deeper agentic workflows</li>
+              <li>Large datasets</li>
+              <li>Custom business context</li>
+              <li>Deeper agentic workflows</li>
             </ul>
           </div>
         </div>

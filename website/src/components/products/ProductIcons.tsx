@@ -31,6 +31,7 @@ const productLogos: Record<string, string> = {
   "anna-expense": "/assets/products/anna-expense.png",
   "iris-carbon-xbrl": "/assets/products/iris-carbon-logo.png",
   fastleads: "/assets/products/fastleads.png",
+  brevlyt: "/assets/products/Brevlyt_icon.png",
 };
 
 const stepIcons: Record<string, LucideIcon> = {

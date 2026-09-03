@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { BrevlytArticle } from "@/components/blog/BrevlytArticle";
+import { BrevlytArticleClean } from "@/components/blog/BrevlytArticleClean";
 
 export const metadata: Metadata = {
   title: "ConsultX Partners with Brevlyt to Bring Autonomous CFO AI to South Africa",
@@ -8,5 +8,5 @@ export const metadata: Metadata = {
 };
 
 export default function BrevlytBlogPage() {
-  return <BrevlytArticle />;
+  return <BrevlytArticleClean />;
 }

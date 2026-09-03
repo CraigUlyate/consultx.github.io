@@ -48,12 +48,21 @@ function walkFiles(dir) {
   return results;
 }
 
+function ensureHostingFiles() {
+  const sourceHtaccess = path.join(root, "public", ".htaccess");
+  const outputHtaccess = path.join(outDir, ".htaccess");
+  if (fs.existsSync(sourceHtaccess)) {
+    fs.copyFileSync(sourceHtaccess, outputHtaccess);
+  }
+}
+
 function build() {
   if (skipBuild) {
     console.log("Skipping build (--skip-build).");
     if (!fs.existsSync(path.join(outDir, "index.html"))) {
       throw new Error("website/out/index.html missing — run a build first");
     }
+    ensureHostingFiles();
     return;
   }
 
@@ -76,6 +85,8 @@ function build() {
   if (!hasExport) {
     throw new Error("Build finished but website/out/index.html is missing");
   }
+
+  ensureHostingFiles();
 }
 
 async function deploySftp({ host, port, user, password, remoteDir }) {

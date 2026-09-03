@@ -21,7 +21,10 @@ const eslintConfig = [
     ],
   },
   {
-    files: ["src/components/blog/BrevlytArticle.tsx"],
+    files: [
+      "src/components/blog/BrevlytArticle.tsx",
+      "src/components/blog/BrevlytArticleClean.tsx",
+    ],
     rules: {
       "react/no-unescaped-entities": "off",
     },

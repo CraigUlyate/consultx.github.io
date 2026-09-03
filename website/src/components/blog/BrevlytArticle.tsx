@@ -21,79 +21,35 @@ export function BrevlytArticle() {
               It is a sophisticated financial intelligence platform, delivered with the expertise of finance professionals and technology specialists to guarantee successful outcomes for your business.
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
-              <Link
-                href="/contact/"
-                className="rounded-full bg-[linear-gradient(135deg,#3f66dc,#6d8cf5)] px-7 py-3.5 font-semibold text-white shadow-[0_14px_30px_rgba(66,98,220,.22)] transition hover:-translate-y-0.5"
-              >
+              <Link href="/contact/" className="rounded-full bg-[linear-gradient(135deg,#3f66dc,#6d8cf5)] px-7 py-3.5 font-semibold text-white shadow-[0_14px_30px_rgba(66,98,220,.22)] transition hover:-translate-y-0.5">
                 Book a demo
               </Link>
-              <Link
-                href="/contact/"
-                className="rounded-full bg-[#e7e9ed] px-7 py-3.5 font-semibold text-[#3155bd] transition hover:bg-[#dde1e7]"
-              >
+              <Link href="/contact/" className="rounded-full bg-[#e7e9ed] px-7 py-3.5 font-semibold text-[#3155bd] transition hover:bg-[#dde1e7]">
                 Talk to us
               </Link>
             </div>
           </div>
 
-          <div className="rounded-[30px] bg-white p-4 shadow-[0_28px_75px_rgba(29,42,72,.12)] md:p-5">
+          <div className="overflow-hidden rounded-[30px] bg-white p-4 shadow-[0_28px_75px_rgba(29,42,72,.12)] md:p-5">
             <div className="overflow-hidden rounded-[20px] border border-[#eceef2] bg-white">
-              <div className="flex h-11 items-center gap-2 bg-[#f0f1f3] px-4">
-                <span className="h-2.5 w-2.5 rounded-full bg-[#d3d6da]" />
-                <span className="h-2.5 w-2.5 rounded-full bg-[#d3d6da]" />
-                <span className="h-2.5 w-2.5 rounded-full bg-[#d3d6da]" />
-                <div className="ml-2 flex-1 rounded-lg bg-white px-3 py-1 text-xs text-[#9aa0a8]">
-                  app.brevlyt.com
-                </div>
-              </div>
-              <div className="grid min-h-[360px] grid-cols-[92px_1fr]">
-                <div className="border-r border-[#eef0f3] bg-[#fbfbfc] p-4">
-                  <div className="flex items-center gap-2 text-xs font-semibold text-[#4c6fe7]">
-                    <span className="h-4 w-4 rounded-full bg-[#6d8cf5]" />
-                    Findings
-                  </div>
-                  <div className="mt-5 space-y-3">
-                    <div className="h-2 rounded bg-[#e5e7eb]" />
-                    <div className="h-2 rounded bg-[#e5e7eb]" />
-                    <div className="h-2 w-4/5 rounded bg-[#e5e7eb]" />
-                  </div>
-                </div>
-                <div className="flex flex-col justify-center p-5 md:p-7">
-                  <div className="rounded-2xl border border-[#e7e9ed] bg-white p-5 shadow-[0_10px_30px_rgba(29,42,72,.04)]">
-                    <div className="text-xs font-semibold text-[#566071]">Finding</div>
-                    <div className="mt-1 text-xl font-bold text-[#181a1e]">Margin pressure detected</div>
-                    <div className="mt-4 space-y-2 text-sm leading-6 text-[#626a78]">
-                      <p>Gross margin has declined despite stable revenue.</p>
-                      <p>Collections are slowing while input costs are increasing.</p>
-                    </div>
-                    <div className="mt-5 flex items-start gap-2 rounded-xl bg-[#f5f8ff] p-3 text-sm text-[#44516a]">
-                      <Check className="mt-0.5 h-4 w-4 shrink-0 text-[#315fd9]" />
-                      Review pricing, supplier terms and working-capital drivers.
-                    </div>
-                  </div>
-                  <div className="mt-4 rounded-xl border border-[#e4e7eb] px-4 py-3 text-sm text-[#a0a6ae]">
-                    Ask your CFO →
-                  </div>
-                </div>
-              </div>
+              <video
+                className="block h-full w-full object-cover"
+                src="/assets/products/Brevlyt_vid.mp4"
+                autoPlay
+                loop
+                muted
+                playsInline
+                preload="metadata"
+              />
             </div>
           </div>
         </div>
 
         <div className="mt-10 grid gap-5 md:grid-cols-3">
           {[
-            {
-              icon: Eye,
-              title: "Continuous analysis rather than periodic analysis",
-            },
-            {
-              icon: Search,
-              title: "Watch, investigate and assist",
-            },
-            {
-              icon: TrendingUp,
-              title: "AI analysis + financial expertise + management judgement",
-            },
+            { icon: Eye, title: "Continuous analysis rather than periodic analysis" },
+            { icon: Search, title: "Watch, investigate and assist" },
+            { icon: TrendingUp, title: "AI analysis + financial expertise + management judgement" },
           ].map(({ icon: Icon, title }) => (
             <div key={title} className="rounded-[26px] bg-white p-7 shadow-[0_18px_45px_rgba(29,42,72,.055)]">
               <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#e8eefc] text-[#315fd9]">
@@ -109,10 +65,10 @@ export function BrevlytArticle() {
         <div className="space-y-6">
           <section className="rounded-[32px] bg-white p-7 shadow-[0_18px_55px_rgba(29,42,72,.05)] md:p-10">
             <h2 className="max-w-4xl text-3xl font-extrabold tracking-[-0.03em] text-[#15171a] md:text-4xl">
-              What if your financial data could tell you what needs attention — before you had to go looking for it?
+              What if your financial data could tell you what needs attention - before you had to go looking for it?
             </h2>
             <div className="mt-7 space-y-5 text-[17px] leading-8 text-[#5a6270]">
-              <p>We’re excited to announce that <strong className="text-[#17191d]">ConsultX has partnered with Brevlyt to bring its AI-powered CFO platform to the South African market.</strong></p>
+              <p>We're excited to announce that <strong className="text-[#17191d]">ConsultX has partnered with Brevlyt to bring its AI-powered CFO platform to the South African market.</strong></p>
               <p>For many businesses, there is no shortage of financial data. The problem is turning that data into useful information quickly enough to make better decisions.</p>
               <p>Management accounts are prepared. Reports are circulated. Spreadsheets are updated. Dashboards are refreshed.</p>
               <p>But someone still has to look through all of it and ask:</p>
@@ -123,13 +79,24 @@ export function BrevlytArticle() {
           </section>
 
           <section className="grid gap-6 lg:grid-cols-[.8fr_1.2fr]">
-            <div className="rounded-[32px] bg-[linear-gradient(145deg,#3f65d8,#6f8ff6)] p-8 text-white shadow-[0_20px_55px_rgba(63,101,216,.2)] md:p-10">
+            <div className="overflow-hidden rounded-[32px] bg-[linear-gradient(145deg,#3f65d8,#6f8ff6)] p-6 text-white shadow-[0_20px_55px_rgba(63,101,216,.2)] md:p-8">
               <p className="text-xs font-bold tracking-[0.16em] text-white/80 uppercase">Brevlyt</p>
-              <h2 className="mt-5 text-3xl font-extrabold tracking-[-0.03em]">Meet Brevlyt: an Autonomous AI CFO</h2>
+              <h2 className="mt-4 text-3xl font-extrabold tracking-[-0.03em]">Meet Brevlyt: an Autonomous AI CFO</h2>
+              <div className="mt-7 overflow-hidden rounded-[22px] border border-white/20 bg-white shadow-[0_16px_38px_rgba(19,42,110,.2)]">
+                <video
+                  className="block w-full object-cover"
+                  src="/assets/products/Brevlyt_vid.mp4"
+                  autoPlay
+                  loop
+                  muted
+                  playsInline
+                  preload="metadata"
+                />
+              </div>
             </div>
             <div className="rounded-[32px] bg-white p-8 shadow-[0_18px_55px_rgba(29,42,72,.05)] md:p-10">
               <div className="space-y-5 text-[17px] leading-8 text-[#5a6270]">
-                <p>Brevlyt describes its platform as an <strong className="text-[#17191d]">Autonomous AI CFO</strong> — a financial intelligence layer that connects to a company's accounting and operational information and continuously analyses what is happening in the business.</p>
+                <p>Brevlyt describes its platform as an <strong className="text-[#17191d]">Autonomous AI CFO</strong> - a financial intelligence layer that connects to a company's accounting and operational information and continuously analyses what is happening in the business.</p>
                 <p>Rather than simply presenting another dashboard, Brevlyt is designed to actively monitor financial and operational data, identify risks and opportunities, investigate what is driving changes, and surface recommendations for management to consider.</p>
                 <p>That distinction is important.</p>
                 <p>Traditional reporting tells you <strong className="text-[#17191d]">what happened</strong>.</p>
@@ -204,7 +171,7 @@ export function BrevlytArticle() {
                 <p>Many South African businesses face a familiar challenge.</p>
                 <p>They need better financial insight, but building a larger finance team isn't always economically practical.</p>
                 <p>At the same time, the complexity of running a business continues to increase.</p>
-                <p>Management needs better information on cash flow, margins, working capital, costs, forecasts and operational performance — and they need it faster.</p>
+                <p>Management needs better information on cash flow, margins, working capital, costs, forecasts and operational performance - and they need it faster.</p>
                 <p>AI creates the possibility of giving smaller and mid-sized businesses access to analytical capabilities that historically required substantial finance teams, sophisticated BI infrastructure or significant consulting support.</p>
                 <p>Brevlyt's proposition is specifically focused on bringing that type of financial intelligence to growing businesses. The platform is designed to connect to accounting software, ERPs and other business systems and combine the information required for financial analysis.</p>
                 <p>We believe that can be particularly powerful when combined with strong financial management processes and experienced human judgement.</p>
@@ -257,10 +224,7 @@ export function BrevlytArticle() {
                   <p>And that future is arriving quickly.</p>
                 </div>
               </div>
-              <Link
-                href="/contact/"
-                className="inline-flex justify-center rounded-full bg-[linear-gradient(135deg,#3f66dc,#6d8cf5)] px-8 py-4 font-semibold text-white shadow-[0_14px_30px_rgba(66,98,220,.22)] transition hover:-translate-y-0.5"
-              >
+              <Link href="/contact/" className="inline-flex justify-center rounded-full bg-[linear-gradient(135deg,#3f66dc,#6d8cf5)] px-8 py-4 font-semibold text-white shadow-[0_14px_30px_rgba(66,98,220,.22)] transition hover:-translate-y-0.5">
                 Arrange a demo
               </Link>
             </div>

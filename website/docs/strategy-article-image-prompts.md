@@ -1,0 +1,9 @@
+Generated with the built-in image-generation tool for the strategy article.
+
+## measured-first-step.webp
+
+Create a polished editorial photograph for ConsultX, a South African business consultancy article about acting early on technology while managing risk. Wide 16:9 landscape. Architectural metaphor: a refined modern concrete and glass office walkway emerging from gentle morning mist into clear soft sunlight, a slim restrained lime-green guiding stripe along the floor leading forward, subtle Johannesburg-inspired business skyline in the distance. Grounded, elegant, calm optimism, natural materials, charcoal, warm white and muted green palette. Premium business magazine photography, realistic light and perspective, generous breathing room. No people, no text, no logos, no robots, no sci-fi holograms, no stock-market arrows. The image should suggest a measured first step and clarity gained through action, not a reckless leap.
+
+## controlled-workflow-pilot.webp
+
+Create a premium candid editorial business photograph for ConsultX about improving existing finance workflows using technology with human review. Wide 16:9 landscape. Three diverse South African finance and operations professionals in a bright understated modern meeting room, collaboratively reviewing a small pilot workflow at a table. One person checks a printed report beside an open laptop displaying discreet abstract rows and a simple muted green chart, another points to a short sequence of paper process cards, the third listens thoughtfully. Natural relaxed body language, realistic hands, subtle lime green stationery accents, warm white, charcoal and wood palette, daylight, restrained professional magazine aesthetic. No legible text, no logos, no robots, no glowing holograms, no exaggerated futuristic effects. Clearly a practical controlled small project, not an AI sales pitch.

@@ -3,6 +3,7 @@
 import gsap from "gsap";
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { Sparkles } from "lucide-react";
 import "./hero-slides.css";
 
 const FREEZE_MS = 10_000;
@@ -241,10 +242,19 @@ export function HeroSection() {
               <span className="block text-consultx-green">{slide.titleLine2}</span>
             </h1>
             <p data-hero-animate>{slide.body}</p>
-            <Link href={slide.href} className="hero-button" data-hero-animate>
-              {slide.cta}
-              <span aria-hidden="true">→</span>
-            </Link>
+            <div className="mt-6 flex flex-wrap items-center gap-3" data-hero-animate>
+              <Link href={slide.href} className="hero-button">
+                {slide.cta}
+                <span aria-hidden="true">→</span>
+              </Link>
+              <Link
+                href="/advisor/"
+                className="inline-flex items-center gap-2 rounded-full border border-white/40 bg-white/10 px-6 py-3.5 text-sm font-semibold text-white backdrop-blur-xs transition-all duration-200 hover:border-consultx-green hover:bg-consultx-green hover:text-white"
+              >
+                <Sparkles className="h-4 w-4 text-consultx-green" />
+                Ask AnNa (AI Advisor)
+              </Link>
+            </div>
           </div>
         </article>
       ))}

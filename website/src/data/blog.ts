@@ -11,6 +11,16 @@ export type BlogPostMeta = {
 
 export const blogPosts: BlogPostMeta[] = [
   {
+    slug: "act-early-build-ai-capability",
+    title: "Do You Wait Until the Market Understands the Opportunity — or Act First?",
+    excerpt: "Act early without acting recklessly. Start with one business problem, test within controlled boundaries and scale what works.",
+    date: "2026-09-11",
+    readTime: "7 min read",
+    coverImage: "/blog/act-early-build-ai-capability/cover.svg",
+    coverAlt: "Five measured steps towards business capability, shown as a rising green path",
+    tags: ["AI", "Automation", "Business strategy"],
+  },
+  {
     slug: "brevlyt-ai-cfo-south-africa",
     title: "ConsultX Partners with Brevlyt to Bring Autonomous CFO AI to South Africa",
     excerpt:
@@ -20,6 +30,18 @@ export const blogPosts: BlogPostMeta[] = [
     coverImage: "/blog/brevlyt-ai-cfo-south-africa/cover.svg",
     coverAlt: "ConsultX and Brevlyt autonomous AI CFO partnership announcement",
     tags: ["Brevlyt", "AI CFO", "Finance", "South Africa"],
+  },
+  {
+    slug: "how-we-built-our-cipc-filing-automation-on-azure",
+    title: "How We Built Our CIPC Filing Automation Tool on Azure",
+    excerpt:
+      "A practical look at how ConsultX built a secure, cloud-based CIPC annual return filing workflow using Azure and browser automation.",
+    date: "2026-08-21",
+    readTime: "8 min read",
+    coverImage: "/blog/how-we-built-our-cipc-filing-automation-on-azure/cover.png",
+    coverAlt:
+      "Professional reviewing a secure cloud-based compliance automation workflow",
+    tags: ["Azure", "CIPC", "Automation", "Compliance"],
   },
   {
     slug: "ai-supported-automation-falling-behind",
@@ -71,7 +93,7 @@ export function getPublishedPosts() {
 
 export function getAllBlogSlugs() {
   return getPublishedPosts()
-    .filter((post) => post.slug !== "brevlyt-ai-cfo-south-africa")
+    .filter((post) => !["brevlyt-ai-cfo-south-africa", "act-early-build-ai-capability"].includes(post.slug))
     .map((post) => post.slug);
 }
 

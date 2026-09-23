@@ -1,0 +1,3 @@
+FROM postgres:16-alpine
+COPY database/migrations /migrations
+CMD ["sh", "-c", "for migration in ${MIGRATION_FILES:-/migrations/*.sql}; do psql \"$DATABASE_URL\" -v ON_ERROR_STOP=1 -f \"$migration\" || { code=$?; echo migration_failed:$code; exit $code; }; done; echo migration_complete"]

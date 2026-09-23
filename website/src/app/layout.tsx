@@ -1,8 +1,6 @@
 import type { Metadata } from "next";
 import { Montserrat } from "next/font/google";
-import { SiteHeader } from "@/components/SiteHeader";
-import { SiteFooter } from "@/components/SiteFooter";
-import { SkylineDivider } from "@/components/SkylineDivider";
+import { SiteFrame } from "@/components/SiteFrame";
 import "./globals.css";
 
 const montserrat = Montserrat({
@@ -31,10 +29,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${montserrat.variable} antialiased`}>
-        <SiteHeader />
-        <main>{children}</main>
-        <SkylineDivider />
-        <SiteFooter />
+        <SiteFrame>{children}</SiteFrame>
       </body>
     </html>
   );

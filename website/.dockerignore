@@ -1,0 +1,7 @@
+node_modules
+.next
+out
+portal-server/node_modules
+portal-server/.next
+.env*
+npm-debug.log*

@@ -19,6 +19,7 @@ function formatDate(date: string) {
 export default function BlogPage() {
   const [featured, ...rest] = blogPosts;
   const isBrevlytFeature = featured?.slug === "brevlyt-ai-cfo-south-africa";
+  const isStrategyFeature = featured?.slug === "act-early-build-ai-capability";
 
   return (
     <section className="mx-auto max-w-[1100px] px-5 py-16 md:px-8">
@@ -35,7 +36,7 @@ export default function BlogPage() {
           href={`/blog/${featured.slug}/`}
           className="group mt-12 block overflow-hidden rounded-xl border border-consultx-border transition hover:border-consultx-green/50 hover:shadow-soft"
         >
-          <div className="relative aspect-[21/9] overflow-hidden bg-consultx-light-grey sm:aspect-[2.4/1]">
+          <div className={`relative overflow-hidden bg-consultx-light-grey ${isStrategyFeature ? "" : "aspect-[21/9] sm:aspect-[2.4/1]"}`}>
             {isBrevlytFeature ? (
               <video
                 className="absolute inset-0 h-full w-full object-cover"
@@ -58,7 +59,7 @@ export default function BlogPage() {
               />
             )}
             <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(5,5,5,0.96)_0%,rgba(5,5,5,0.88)_38%,rgba(5,5,5,0.60)_68%,rgba(5,5,5,0.18)_100%)]" />
-            <div className="absolute inset-0 flex flex-col justify-end p-6 sm:p-10">
+            <div className={`${isStrategyFeature ? "relative min-h-[380px]" : "absolute inset-0"} flex flex-col justify-end p-6 sm:p-10`}>
               <p className="text-sm font-semibold tracking-[0.16em] text-consultx-green uppercase">
                 Featured
               </p>

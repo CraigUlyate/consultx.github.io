@@ -2,6 +2,7 @@
 
 # dependencies
 /node_modules
+/portal-server/node_modules
 /.pnp
 .pnp.*
 .yarn/*
@@ -15,6 +16,7 @@
 
 # next.js
 /.next/
+/portal-server/.next/
 /out/
 
 # production

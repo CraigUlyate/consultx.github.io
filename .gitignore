@@ -15,6 +15,8 @@ out/
 .DS_Store
 Thumbs.db
 *.log
+.azure-cipc-worker
+.azure-cipc-worker.pub
 
 # Personal and local-only materials — do not publish
 Examples/CVs/

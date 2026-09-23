@@ -17,6 +17,21 @@ const args = new Set(process.argv.slice(2));
 const dryRun = args.has("--dry-run");
 const clean = args.has("--clean");
 const skipBuild = args.has("--skip-build");
+const blogSlug = [...args].find((arg) => arg.startsWith("--blog="))?.slice(7);
+if (blogSlug && !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(blogSlug)) {
+  throw new Error("Invalid --blog slug");
+}
+if (blogSlug && clean) throw new Error("A scoped blog deployment cannot use --clean");
+
+function deploymentFiles() {
+  return walkFiles(outDir).filter((file) => {
+    if (!blogSlug) return true;
+    const relative = path.relative(outDir, file).replace(/\\/g, "/");
+    return relative.startsWith("_next/static/") ||
+      relative.startsWith(`blog/${blogSlug}/`) ||
+      ["blog/index.html", "blog/index.txt"].includes(relative);
+  });
+}
 
 function required(name) {
   const value = process.env[name]?.trim();
@@ -74,13 +89,8 @@ function build() {
   });
 
   const hasExport = fs.existsSync(path.join(outDir, "index.html"));
-  if (result.status !== 0 && !hasExport) {
+  if (result.status !== 0) {
     throw new Error("Build failed — deploy aborted");
-  }
-  if (result.status !== 0 && hasExport) {
-    console.warn(
-      "Build exited with an error, but out/ looks complete — continuing deploy."
-    );
   }
   if (!hasExport) {
     throw new Error("Build finished but website/out/index.html is missing");
@@ -118,7 +128,13 @@ async function deploySftp({ host, port, user, password, remoteDir }) {
     }
 
     console.log(`Uploading ${outDir} -> ${remoteDir}`);
-    await sftp.uploadDir(outDir, remoteDir);
+    if (blogSlug) {
+      for (const file of deploymentFiles()) {
+        const target = `${remoteDir}/${path.relative(outDir, file).replace(/\\/g, "/")}`;
+        await sftp.mkdir(path.posix.dirname(target), true);
+        await sftp.put(file, target);
+      }
+    } else await sftp.uploadDir(outDir, remoteDir);
   } finally {
     await sftp.end();
   }
@@ -143,7 +159,13 @@ async function deployFtp({ host, port, user, password, remoteDir }) {
       await ftp.clearWorkingDir();
     }
     console.log(`Uploading ${outDir} -> ${remoteDir}`);
-    await ftp.uploadFromDir(outDir);
+    if (blogSlug) {
+      for (const file of deploymentFiles()) {
+        const target = `${remoteDir}/${path.relative(outDir, file).replace(/\\/g, "/")}`;
+        await ftp.ensureDir(path.posix.dirname(target));
+        await ftp.uploadFrom(file, target);
+      }
+    } else await ftp.uploadFromDir(outDir);
   } finally {
     ftp.close();
   }
@@ -159,7 +181,10 @@ async function main() {
 
   build();
 
-  const files = walkFiles(outDir);
+  if (blogSlug && !fs.existsSync(path.join(outDir, "blog", blogSlug, "index.html"))) {
+    throw new Error("Scoped blog article is missing from the export");
+  }
+  const files = deploymentFiles();
   console.log(`Prepared ${files.length} files from out/`);
   console.log(`Target: ${protocol.toUpperCase()} ${user}@${host}:${port}${remoteDir}`);
 

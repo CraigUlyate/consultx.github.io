@@ -9,7 +9,7 @@ type BlogMarkdownProps = {
 
 const components: Components = {
   h2: ({ children }) => (
-    <h2 className="group mt-16 scroll-mt-28 border-l-[3px] border-consultx-green pl-4 text-2xl font-bold tracking-tight text-consultx-black first:mt-0 sm:text-[1.75rem]">
+    <h2 className="group mt-16 scroll-mt-28 border-l-[3px] border-consultx-green pl-4 text-2xl font-bold tracking-tight text-consultx-black sm:text-[1.75rem]">
       {children}
     </h2>
   ),

@@ -8,6 +8,7 @@ import {
   LayoutDashboard,
   LogOut,
   Settings,
+  ShieldCheck,
   Sparkles,
 } from "lucide-react";
 import { ConsultXLogo } from "@/components/ConsultXLogo";
@@ -18,6 +19,7 @@ const navigation = [
   { label: "Companies", icon: Building2, href: "/portal/companies/" },
   { label: "My services", icon: ClipboardList, href: "/portal/services/" },
   { label: "Documents", icon: FileText, href: "/portal/documents/" },
+  { label: "Operator Queue", icon: ShieldCheck, href: "/portal/admin/", badge: "ADMIN" },
 ];
 
 export function PortalShell({ children }: Readonly<{ children: React.ReactNode }>) {
@@ -51,18 +53,25 @@ export function PortalShell({ children }: Readonly<{ children: React.ReactNode }
       <div className="mx-auto flex max-w-[1600px]">
         <aside className="hidden w-64 shrink-0 border-r border-consultx-border bg-white p-5 lg:block">
           <nav className="space-y-1">
-            {navigation.map(({ label, icon: Icon, href }) => (
+            {navigation.map(({ label, icon: Icon, href, badge }) => (
               <Link
                 key={href}
                 href={href}
-                className={`flex items-center gap-3 rounded-lg px-3 py-3 text-sm font-semibold transition-all ${
+                className={`flex items-center justify-between rounded-lg px-3 py-3 text-sm font-semibold transition-all ${
                   href === "/portal/"
                     ? "bg-consultx-green-soft text-consultx-green-dark"
                     : "text-consultx-charcoal hover:bg-consultx-light-grey"
                 }`}
               >
-                <Icon className="h-5 w-5" />
-                {label}
+                <div className="flex items-center gap-3">
+                  <Icon className="h-5 w-5" />
+                  {label}
+                </div>
+                {badge && (
+                  <span className="rounded bg-consultx-black px-1.5 py-0.5 text-[9px] font-bold text-consultx-green font-mono">
+                    {badge}
+                  </span>
+                )}
               </Link>
             ))}
           </nav>

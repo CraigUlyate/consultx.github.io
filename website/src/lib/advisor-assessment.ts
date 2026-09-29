@@ -209,11 +209,11 @@ export function assessWorkflow(userText: string, profile?: Partial<ProcessProfil
       estimatedMonthlyZar: "R1,850/month (SaaS & support)",
       expectedPaybackMonths: paybackText,
       pricingBasis: hours
-        ? `Based on ${hours} hours/month recoverable staff time at R200/hr benchmark vs standard deployment.`
-        : "Scope, access, baseline effort and costs to be confirmed during scoping.",
+        ? `Based on ${hours} hours/month recoverable staff time at R200/hr benchmark vs standard deployment. Indicative estimate based on business dimensions (turnover, headcount, locations, system complexity); requires final scoping, review and approval by Craig Ulyate (CA(SA)).`
+        : "Indicative estimate based on business dimensions (turnover, headcount, locations, system complexity); requires final scoping, review and approval by Craig Ulyate (CA(SA)).",
     },
     nextStepTitle: "Schedule Scoping Review with Craig Ulyate (CA(SA))",
-    nextStepDescription: "Review this preliminary blueprint, validate software API access, and confirm deployment timeline.",
+    nextStepDescription: "Review this preliminary blueprint and fee estimate, validate software API access, and confirm engagement terms.",
   } : undefined;
 
   const explanation = state.pending === "scale" ? "Staff time means the combined hours people spend doing the work; elapsed days and document counts are separate."

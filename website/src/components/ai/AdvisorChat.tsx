@@ -1,6 +1,7 @@
 "use client";
 
 import ReactMarkdown from "react-markdown";
+import { useRouter } from "next/navigation";
 import { PUBLIC_CHAT_NOTICE, PUBLIC_CHAT_BLOCK_MESSAGE, containsSensitivePublicInput } from "@/lib/public-chat-safety";
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import {
@@ -10,6 +11,14 @@ import {
   CheckCircle2,
   AlertCircle,
   X,
+  Maximize2,
+  Minimize2,
+  ExternalLink,
+  RotateCcw,
+  Copy,
+  Check,
+  PhoneCall,
+  Mail,
 } from "lucide-react";
 import {
   Message,
@@ -26,7 +35,19 @@ interface AdvisorChatProps {
   initialPrompt?: string;
   onClose?: () => void;
   fullPage?: boolean;
+  isMaximized?: boolean;
+  onToggleMaximize?: () => void;
 }
+
+const STORAGE_KEY = "consultx_advisor_session_state";
+
+const DEFAULT_WELCOME_MESSAGE: Message = {
+  id: "welcome",
+  role: "assistant",
+  content:
+    "Hello! I am **AnNa**, ConsultX's AI Accountant and Business Solution Advisor.\n\nAsk me about:\n• **Workflow Automation**: System integrations, debtor chasing, and OCR pipelines.\n• **Business Valuations**: Independent DCF and EBITDA valuations led by Craig Ulyate (CA(SA)).\n• **Fixed-Price Compliance**: 2026 rates for Annual Financial Statements, SARS Tax, and CIPC filings.\n• **AnNa Expense**: AI receipt and slip intake via WhatsApp.",
+  timestamp: new Date().toISOString(),
+};
 
 const SEED_PROMPTS = [
   "I want to assess automation opportunities across my business.",
@@ -36,24 +57,78 @@ const SEED_PROMPTS = [
   "Can we capture credit card slips via WhatsApp into Xero?",
 ];
 
-export function AdvisorChat({ initialPrompt, onClose, fullPage = false }: AdvisorChatProps) {
-  const [sessionId] = useState(() => `sess_${Math.random().toString(36).substring(2, 11)}`);
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: "welcome",
-      role: "assistant",
-      content:
-        "Hello! I am **AnNa**, ConsultX's AI Accountant and Business Solution Advisor.\n\nAsk me about:\n• **Workflow Automation**: System integrations, debtor chasing, and OCR pipelines.\n• **Business Valuations**: Independent DCF and EBITDA valuations led by Craig Ulyate (CA(SA)).\n• **Fixed-Price Compliance**: 2026 rates for Annual Financial Statements, SARS Tax, and CIPC filings.\n• **AnNa Expense**: AI receipt and slip intake via WhatsApp.",
-      timestamp: new Date().toISOString(),
-    },
-  ]);
+export function AdvisorChat({
+  initialPrompt,
+  onClose,
+  fullPage = false,
+  isMaximized = false,
+  onToggleMaximize,
+}: AdvisorChatProps) {
+  const router = useRouter();
+  const [copiedBrief, setCopiedBrief] = useState(false);
+  const [sessionId, setSessionId] = useState(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const saved = sessionStorage.getItem(STORAGE_KEY);
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (parsed.sessionId) return parsed.sessionId;
+        }
+      } catch {
+        // ignore
+      }
+    }
+    return `sess_${Math.random().toString(36).substring(2, 11)}`;
+  });
+  const [messages, setMessages] = useState<Message[]>(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const saved = sessionStorage.getItem(STORAGE_KEY);
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed.messages) && parsed.messages.length > 0) {
+            return parsed.messages;
+          }
+        }
+      } catch {
+        // ignore
+      }
+    }
+    return [DEFAULT_WELCOME_MESSAGE];
+  });
   const [inputText, setInputText] = useState("");
   const [privacyError, setPrivacyError] = useState("");
   const [selections, setSelections] = useState<string[]>([]);
   const composerRef = useRef<HTMLTextAreaElement>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [profile, setProfile] = useState<Partial<ProcessProfile>>({});
-  const [activeBlueprint, setActiveBlueprint] = useState<SolutionBlueprint | null>(null);
+  const [profile, setProfile] = useState<Partial<ProcessProfile>>(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const saved = sessionStorage.getItem(STORAGE_KEY);
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (parsed.profile) return parsed.profile;
+        }
+      } catch {
+        // ignore
+      }
+    }
+    return {};
+  });
+  const [activeBlueprint, setActiveBlueprint] = useState<SolutionBlueprint | null>(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const saved = sessionStorage.getItem(STORAGE_KEY);
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (parsed.activeBlueprint) return parsed.activeBlueprint;
+        }
+      } catch {
+        // ignore
+      }
+    }
+    return null;
+  });
 
   // Booking Modal State
   const [showBooking, setShowBooking] = useState(false);
@@ -82,6 +157,54 @@ export function AdvisorChat({ initialPrompt, onClose, fullPage = false }: Adviso
   useEffect(() => {
     scrollToBottom();
   }, [messages, isLoading]);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      try {
+        sessionStorage.setItem(
+          STORAGE_KEY,
+          JSON.stringify({
+            sessionId,
+            messages,
+            profile,
+            activeBlueprint,
+          })
+        );
+      } catch {
+        // ignore
+      }
+    }
+  }, [sessionId, messages, profile, activeBlueprint]);
+
+  const handleResetChat = () => {
+    if (typeof window !== "undefined") {
+      try {
+        sessionStorage.removeItem(STORAGE_KEY);
+      } catch {
+        // ignore
+      }
+    }
+    const newSessionId = `sess_${Math.random().toString(36).substring(2, 11)}`;
+    setSessionId(newSessionId);
+    setProfile({});
+    setActiveBlueprint(null);
+    setMessages([
+      {
+        ...DEFAULT_WELCOME_MESSAGE,
+        timestamp: new Date().toISOString(),
+      },
+    ]);
+    setInputText("");
+    setSelections([]);
+    setPrivacyError("");
+  };
+
+  const handleGoFullscreen = () => {
+    router.push("/advisor");
+    if (onClose) {
+      onClose();
+    }
+  };
 
   const handleSend = useCallback(
     async (textToSend?: string) => {
@@ -214,16 +337,55 @@ export function AdvisorChat({ initialPrompt, onClose, fullPage = false }: Adviso
             <p className="text-[11px] text-gray-300">ConsultX advisor · Supported by Craig Ulyate (CA(SA))</p>
           </div>
         </div>
-        {onClose && (
+
+        <div className="flex items-center gap-1.5">
+          {/* New / Reset Chat Button */}
           <button
             type="button"
-            onClick={onClose}
-            className="rounded-lg p-1 text-gray-400 hover:bg-gray-700 hover:text-white"
-            aria-label="Close"
+            onClick={handleResetChat}
+            className="rounded-lg p-1.5 text-gray-400 hover:bg-gray-700 hover:text-white transition-colors"
+            title="Start fresh conversation"
+            aria-label="Start fresh conversation"
           >
-            <X className="h-5 w-5" />
+            <RotateCcw className="h-4 w-4" />
           </button>
-        )}
+
+          {!fullPage && onToggleMaximize && (
+            <button
+              type="button"
+              onClick={onToggleMaximize}
+              className="rounded-lg p-1.5 text-gray-400 hover:bg-gray-700 hover:text-white transition-colors"
+              title={isMaximized ? "Shrink drawer" : "Maximize drawer"}
+              aria-label={isMaximized ? "Shrink drawer" : "Maximize drawer"}
+            >
+              {isMaximized ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
+            </button>
+          )}
+
+          {!fullPage && (
+            <button
+              type="button"
+              onClick={handleGoFullscreen}
+              className="flex items-center gap-1 rounded-lg px-2 py-1 text-xs text-gray-300 hover:bg-gray-700 hover:text-white transition-colors"
+              title="Open full page /advisor"
+              aria-label="Open full page advisor"
+            >
+              <ExternalLink className="h-4 w-4" />
+              <span className="hidden sm:inline text-[11px]">Fullscreen</span>
+            </button>
+          )}
+
+          {onClose && (
+            <button
+              type="button"
+              onClick={onClose}
+              className="rounded-lg p-1.5 text-gray-400 hover:bg-gray-700 hover:text-white transition-colors ml-1"
+              aria-label="Close"
+            >
+              <X className="h-5 w-5" />
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Messages Stream */}
@@ -433,8 +595,18 @@ export function AdvisorChat({ initialPrompt, onClose, fullPage = false }: Adviso
                     <h4 className="mt-3 font-bold text-sm text-gray-900">Consultation Request Received</h4>
                     <p className="mt-2 text-xs text-gray-600 leading-relaxed">
                       Your reference ID is <strong className="text-consultx-black">{bookingSubmitted.confirmationId}</strong>.
-                      {bookingSubmitted.message}
+                      {" "}{bookingSubmitted.message}
                     </p>
+                    <div className="mt-4 flex flex-col gap-2">
+                      <a
+                        href={`https://wa.me/27828185760?text=${encodeURIComponent(`Hi Craig, I've submitted a consultation request via ConsultX (Ref: ${bookingSubmitted.confirmationId}). Looking forward to connecting!`)}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-[#25D366] px-4 py-2.5 text-xs font-bold text-white hover:bg-[#20BA5C] transition-all shadow-xs"
+                      >
+                        <PhoneCall className="h-4 w-4" /> Message Craig on WhatsApp
+                      </a>
+                    </div>
                   </>
                 ) : (
                   <>
@@ -445,12 +617,37 @@ export function AdvisorChat({ initialPrompt, onClose, fullPage = false }: Adviso
                     <p className="mt-2 text-xs text-gray-600 leading-relaxed">
                       {bookingSubmitted.message}
                     </p>
-                    <a
-                      href={`mailto:craig@consultx.co.za?subject=${encodeURIComponent(`ConsultX Advisory Request - ${bookingForm.name}`)}&body=${encodeURIComponent(`Name: ${bookingForm.name}\nEmail: ${bookingForm.email}\nPhone: ${bookingForm.phone}\nCompany: ${bookingForm.company}\nNotes: ${bookingForm.notes}`)}`}
-                      className="mt-3 inline-block rounded-xl bg-consultx-green px-4 py-2 text-xs font-bold text-white hover:bg-consultx-green-dark transition-all"
-                    >
-                      Email Brief Directly to Craig
-                    </a>
+                    <div className="mt-4 flex flex-col gap-2">
+                      <a
+                        href={`https://wa.me/27828185760?text=${encodeURIComponent(`Hi Craig, I would like to schedule a consultation with ConsultX.\n\nName: ${bookingForm.name}\nEmail: ${bookingForm.email}\nPhone: ${bookingForm.phone}\nCompany: ${bookingForm.company}\nNotes: ${bookingForm.notes || "None"}`)}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-[#25D366] px-4 py-2.5 text-xs font-bold text-white hover:bg-[#20BA5C] transition-all shadow-xs"
+                      >
+                        <PhoneCall className="h-4 w-4" /> WhatsApp Craig Directly (+27 82 818 5760)
+                      </a>
+                      <a
+                        href={`mailto:craig@consultx.co.za?subject=${encodeURIComponent(`ConsultX Advisory Request - ${bookingForm.name}`)}&body=${encodeURIComponent(`Name: ${bookingForm.name}\nEmail: ${bookingForm.email}\nPhone: ${bookingForm.phone}\nCompany: ${bookingForm.company}\nNotes: ${bookingForm.notes}`)}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-consultx-green px-4 py-2.5 text-xs font-bold text-white hover:bg-consultx-green-dark transition-all shadow-xs"
+                      >
+                        <Mail className="h-4 w-4" /> Email Brief Directly (craig@consultx.co.za)
+                      </a>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const text = `ConsultX Advisory Request\nName: ${bookingForm.name}\nEmail: ${bookingForm.email}\nPhone: ${bookingForm.phone}\nCompany: ${bookingForm.company}\nNotes: ${bookingForm.notes}`;
+                          navigator.clipboard.writeText(text);
+                          setCopiedBrief(true);
+                          setTimeout(() => setCopiedBrief(false), 3000);
+                        }}
+                        className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-gray-200 bg-gray-50 px-4 py-2 text-xs font-semibold text-gray-700 hover:bg-gray-100 transition-all"
+                      >
+                        {copiedBrief ? <Check className="h-4 w-4 text-consultx-green" /> : <Copy className="h-4 w-4" />}
+                        {copiedBrief ? "Copied to Clipboard!" : "Copy Request to Clipboard"}
+                      </button>
+                    </div>
                   </>
                 )}
                 <button

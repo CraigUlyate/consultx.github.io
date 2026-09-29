@@ -6,6 +6,7 @@ import { AdvisorChat } from "./AdvisorChat";
 
 export function AdvisorDrawer() {
   const [isOpen, setIsOpen] = useState(false);
+  const [isMaximized, setIsMaximized] = useState(false);
 
   // Listen for custom event so other components (e.g. Hero buttons) can trigger opening the drawer
   useEffect(() => {
@@ -65,9 +66,15 @@ export function AdvisorDrawer() {
           {/* Drawer Panel */}
           <section
             aria-label="Ask AnNa Chat"
-            className="relative z-50 flex h-full w-full max-w-[480px] flex-col bg-white shadow-2xl transition-transform duration-300 animate-in slide-in-from-right"
+            className={`relative z-50 flex h-full w-full flex-col bg-white shadow-2xl transition-all duration-300 animate-in slide-in-from-right ${
+              isMaximized ? "max-w-4xl" : "max-w-[480px]"
+            }`}
           >
-            <AdvisorChat onClose={() => setIsOpen(false)} />
+            <AdvisorChat
+              onClose={() => setIsOpen(false)}
+              isMaximized={isMaximized}
+              onToggleMaximize={() => setIsMaximized((prev) => !prev)}
+            />
           </section>
         </div>
       )}

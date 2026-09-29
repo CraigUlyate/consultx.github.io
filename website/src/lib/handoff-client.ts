@@ -3,7 +3,9 @@
  * Replaces legacy base64 and unsupported /redeem routes with opaque references.
  */
 
-const BACKEND_URL = process.env.NEXT_PUBLIC_ADVISOR_API_URL || "";
+const BACKEND_URL =
+  process.env.NEXT_PUBLIC_ADVISOR_API_URL ||
+  "https://annasimple-api-37055003117.europe-west1.run.app";
 const SAAS_URL = process.env.NEXT_PUBLIC_ANNA_SAAS_URL || "https://anna-accounting.com";
 
 export interface HandoffSessionView {

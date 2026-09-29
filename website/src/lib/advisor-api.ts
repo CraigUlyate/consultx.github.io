@@ -349,7 +349,9 @@ export const VALUATION_DIAGNOSTIC_BANK = {
   },
 };
 
-const BACKEND_URL = process.env.NEXT_PUBLIC_ADVISOR_API_URL || "";
+const BACKEND_URL =
+  process.env.NEXT_PUBLIC_ADVISOR_API_URL ||
+  "https://annasimple-api-37055003117.europe-west1.run.app";
 const DEFAULT_TIMEOUT_MS = 15_000;
 
 function isTransientHttpStatus(status: number): boolean {

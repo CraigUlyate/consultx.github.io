@@ -9,7 +9,9 @@ import { fetchHandoffSession } from "@/lib/handoff-client";
 type EntityType = "company" | "close-corporation";
 
 const steps = ["Company", "Financial information", "Beneficial ownership", "Review & authorise"];
-const BACKEND_URL = process.env.NEXT_PUBLIC_ADVISOR_API_URL || "";
+const BACKEND_URL =
+  process.env.NEXT_PUBLIC_ADVISOR_API_URL ||
+  "https://annasimple-api-37055003117.europe-west1.run.app";
 
 function cipcFee(turnover: number, entityType: EntityType, late: boolean) {
   if (entityType === "close-corporation") return turnover >= 50_000_000 ? 4_000 : late ? 250 : 100;

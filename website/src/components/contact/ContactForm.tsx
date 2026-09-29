@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
+import { trackMarketingEvent } from "@/lib/marketing-analytics";
 
 type Status = "idle" | "sending" | "success" | "error";
 
@@ -40,6 +41,7 @@ export function ContactForm() {
 
       form.reset();
       setStatus("success");
+      trackMarketingEvent("consultx_enquiry_success");
       setFeedback(payload.message || "Thanks — your message has been sent.");
     } catch {
       setStatus("error");

@@ -19,8 +19,7 @@ export function SiteFrame({ children }: Readonly<{ children: React.ReactNode }>)
       <main>{children}</main>
       <SkylineDivider />
       <SiteFooter />
-      {!isAdvisorPage && <AdvisorDrawer />}
+      {!isAdvisorPage && <div data-analytics-exclude><AdvisorDrawer /></div>}
     </>
   );
 }
-

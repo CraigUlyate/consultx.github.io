@@ -77,7 +77,7 @@ export default function OperatorAdminQueuePage() {
     regNumber: "2022/123456/07",
     turnover: 6500000,
     tierFee: 450,
-    consultxFee: 850,
+    consultxFee: 425,
     lateFee: false,
     status: "READY_TO_FILE",
     clientAuthorizedAt: "Today, 08:42",

@@ -17,19 +17,31 @@ const args = new Set(process.argv.slice(2));
 const dryRun = args.has("--dry-run");
 const clean = args.has("--clean");
 const skipBuild = args.has("--skip-build");
+const marketingOnly = args.has("--marketing");
 const blogSlug = [...args].find((arg) => arg.startsWith("--blog="))?.slice(7);
 if (blogSlug && !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(blogSlug)) {
   throw new Error("Invalid --blog slug");
 }
 if (blogSlug && clean) throw new Error("A scoped blog deployment cannot use --clean");
+if (marketingOnly && (clean || blogSlug)) throw new Error("A marketing deployment cannot use --clean or --blog");
+const scopedUpload = Boolean(blogSlug || marketingOnly);
 
 function deploymentFiles() {
   return walkFiles(outDir).filter((file) => {
-    if (!blogSlug) return true;
     const relative = path.relative(outDir, file).replace(/\\/g, "/");
+    if (marketingOnly) {
+      return relative.startsWith("_next/static/") ||
+        ["index.html", "index.txt", "robots.txt", "sitemap.xml"].includes(relative) ||
+        /^(about|blog|contact|faqs|products|services)\/.*\.(html|txt)$/.test(relative);
+    }
+    if (!blogSlug) return true;
     return relative.startsWith("_next/static/") ||
       relative.startsWith(`blog/${blogSlug}/`) ||
       ["blog/index.html", "blog/index.txt"].includes(relative);
+  }).sort((a, b) => {
+    // Publish hashed dependencies before any page starts referencing them.
+    const asset = (file) => path.relative(outDir, file).replace(/\\/g, "/").startsWith("_next/static/");
+    return Number(asset(b)) - Number(asset(a));
   });
 }
 
@@ -128,7 +140,7 @@ async function deploySftp({ host, port, user, password, remoteDir }) {
     }
 
     console.log(`Uploading ${outDir} -> ${remoteDir}`);
-    if (blogSlug) {
+    if (scopedUpload) {
       for (const file of deploymentFiles()) {
         const target = `${remoteDir}/${path.relative(outDir, file).replace(/\\/g, "/")}`;
         await sftp.mkdir(path.posix.dirname(target), true);
@@ -159,7 +171,7 @@ async function deployFtp({ host, port, user, password, remoteDir }) {
       await ftp.clearWorkingDir();
     }
     console.log(`Uploading ${outDir} -> ${remoteDir}`);
-    if (blogSlug) {
+    if (scopedUpload) {
       for (const file of deploymentFiles()) {
         const target = `${remoteDir}/${path.relative(outDir, file).replace(/\\/g, "/")}`;
         await ftp.ensureDir(path.posix.dirname(target));

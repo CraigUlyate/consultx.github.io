@@ -1,0 +1,16 @@
+{
+  "Name": "ConsultX CIPC Browser VM Lifecycle Operator",
+  "IsCustom": true,
+  "Description": "Starts, deallocates, and reads the one ConsultX CIPC browser VM. It cannot create, change, delete, or access other virtual machines.",
+  "Actions": [
+    "Microsoft.Compute/virtualMachines/read",
+    "Microsoft.Compute/virtualMachines/start/action",
+    "Microsoft.Compute/virtualMachines/deallocate/action"
+  ],
+  "NotActions": [],
+  "DataActions": [],
+  "NotDataActions": [],
+  "AssignableScopes": [
+    "/subscriptions/0dbaa65b-80fe-4435-ba06-60e1253eb5f5"
+  ]
+}

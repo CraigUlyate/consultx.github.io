@@ -1,0 +1,45 @@
+# ConsultX CIPC browser worker proof-of-concept host.
+# The host has no public IP. Operators connect only through Azure Bastion.
+package_update: true
+package_upgrade: false
+
+users:
+  - default
+  - name: consultxoperator
+    shell: /bin/bash
+    ssh_authorized_keys:
+      - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAILRu80TIU+kVOZMhsnqITQj9Ye6ylsQ9/skTcaskNQRP codexsandboxoffline@Terminator
+
+packages:
+  - xfce4
+  - xfce4-goodies
+  - xrdp
+  - dbus-x11
+  - docker.io
+  - git
+  - curl
+
+write_files:
+  - path: /home/consultxoperator/.xsession
+    owner: consultxoperator:consultxoperator
+    permissions: "0644"
+    content: |
+      startxfce4
+  - path: /etc/xrdp/startwm.sh
+    permissions: "0755"
+    content: |
+      #!/bin/sh
+      if [ -r /etc/default/locale ]; then
+        . /etc/default/locale
+        export LANG LANGUAGE
+      fi
+      startxfce4
+
+runcmd:
+  - usermod -aG ssl-cert xrdp
+  - usermod -aG docker consultxoperator
+  - systemctl enable --now xrdp
+  - systemctl enable --now docker
+  - mkdir -p /opt/consultx/cipc-worker
+  - chown -R consultxoperator:consultxoperator /opt/consultx
+  - printf '%s\n' 'Browser worker host ready. Do not solve or bypass CAPTCHA; an authorised operator must enter it.' > /opt/consultx/cipc-worker/README.txt

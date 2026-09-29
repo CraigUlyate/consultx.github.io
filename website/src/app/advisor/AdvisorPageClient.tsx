@@ -23,7 +23,7 @@ export function AdvisorPageClient() {
           </h1>
           <p className="mx-auto mt-2 max-w-2xl text-sm text-gray-600">
             Tell AnNa where you spend manual time across finance and operations. Receive an indicative
-            Solution Blueprint, system feasibility score, and review it directly with Craig Ulyate (CA(SA)).
+            assessment with candidate opportunities and open questions, and review it directly with Craig Ulyate (CA(SA)).
           </p>
 
           <div className="mt-4 flex flex-wrap items-center justify-center gap-6 text-xs text-gray-500">
@@ -31,10 +31,10 @@ export function AdvisorPageClient() {
               <Award className="h-4 w-4 text-consultx-green" /> Chartered Accountant Led
             </span>
             <span className="flex items-center gap-1">
-              <Clock className="h-4 w-4 text-consultx-green" /> Instant 3-Minute Diagnosis
+              <Clock className="h-4 w-4 text-consultx-green" /> Guided business assessment
             </span>
             <span className="flex items-center gap-1">
-              <Shield className="h-4 w-4 text-consultx-green" /> POPIA Compliant & Secure
+              <Shield className="h-4 w-4 text-consultx-green" /> Public chat for business scoping
             </span>
           </div>
         </div>
@@ -47,3 +47,4 @@ export function AdvisorPageClient() {
     </div>
   );
 }
+

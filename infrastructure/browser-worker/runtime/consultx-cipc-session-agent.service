@@ -1,0 +1,21 @@
+[Unit]
+Description=ConsultX human-gated CIPC filing session agent
+After=docker.service network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+Environment=AZURE_CLIENT_ID=96f801ed-ba4a-4f26-aaa3-372c61e5b8ab
+Environment=KEY_VAULT_URL=https://kv-consultx-dev-0dbaa65b.vault.azure.net/
+Environment=DATABASE_SECRET_NAME=portal-database-url
+Environment=SESSION_HEARTBEAT_MS=60000
+Environment=SESSION_MAX_MINUTES=120
+ExecStartPre=/usr/local/bin/consultx-acr-login
+ExecStartPre=/usr/bin/docker pull acrconsultxdev0dbaa65b.azurecr.io/cipc-session-agent:dev
+ExecStart=/usr/bin/docker run --rm --name consultx-cipc-session-agent --network host -e AZURE_CLIENT_ID -e KEY_VAULT_URL -e DATABASE_SECRET_NAME -e SESSION_HEARTBEAT_MS -e SESSION_MAX_MINUTES acrconsultxdev0dbaa65b.azurecr.io/cipc-session-agent:dev
+ExecStop=/usr/bin/docker stop -t 20 consultx-cipc-session-agent
+Restart=always
+RestartSec=15
+
+[Install]
+WantedBy=multi-user.target

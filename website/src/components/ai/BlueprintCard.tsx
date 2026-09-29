@@ -38,7 +38,7 @@ export function BlueprintCard({ blueprint, onBookReview, onRefine }: BlueprintCa
               }`}
             >
               <Sparkles className="h-3 w-3" />
-              {blueprint.isTailored ? "Tailored Solution Blueprint" : "Preliminary Solution Hypothesis"}
+              {blueprint.isTailored ? "Tailored Solution Blueprint" : "Preliminary Assessment"}
             </span>
             <span className="rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-700">
               Feasibility: {blueprint.feasibilityRating}
@@ -52,7 +52,7 @@ export function BlueprintCard({ blueprint, onBookReview, onRefine }: BlueprintCa
           <div className="text-right">
             <div className="text-[10px] uppercase font-semibold text-gray-400">Opportunity</div>
             <div className="text-base font-extrabold text-consultx-black">
-              {blueprint.opportunityScore}<span className="text-xs font-normal text-gray-400">/10</span>
+              {blueprint.opportunityScore ?? "Unrated"}<span className="text-xs font-normal text-gray-400">{blueprint.opportunityScore == null ? "" : "/10"}</span>
             </div>
           </div>
           <TrendingUp className="h-5 w-5 text-consultx-green" />
@@ -65,7 +65,7 @@ export function BlueprintCard({ blueprint, onBookReview, onRefine }: BlueprintCa
           <div className="flex items-center gap-2">
             <Sparkles className="h-4 w-4 text-amber-600 shrink-0" />
             <span>
-              <strong>Preliminary Estimate.</strong> Want a more focused solution for your exact software and volume?
+              <strong>Preliminary Assessment.</strong> Want a more focused solution for your exact software and volume?
             </span>
           </div>
           <button
@@ -73,15 +73,16 @@ export function BlueprintCard({ blueprint, onBookReview, onRefine }: BlueprintCa
             onClick={onRefine}
             className="rounded-md bg-amber-600 px-2.5 py-1 text-[11px] font-bold text-white hover:bg-amber-700 transition-all shadow-xs"
           >
-            Refine with 3 Questions →
+            Refine this assessment →
           </button>
         </div>
       )}
 
       {/* Problem Restatement */}
       <p className="mt-3 text-xs leading-relaxed text-gray-600">
-        <strong className="text-gray-900">Diagnosed Challenge:</strong> {blueprint.problemRestatement}
+        <strong className="text-gray-900">Reported Challenge:</strong> {blueprint.problemRestatement}
       </p>
+      <p className="mt-2 text-xs text-gray-600">{blueprint.expectedBenefit}</p>
 
       {/* Process Flow Comparison */}
       <div className="mt-4 grid gap-3 sm:grid-cols-2">

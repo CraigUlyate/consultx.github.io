@@ -330,10 +330,10 @@ export const RATES_SCHEDULE_2026: ServiceItem[] = [
     id: "cipc_annual_return",
     name: "CIPC Annual Return Filing",
     category: "compliance",
-    basePriceZar: 850,
-    priceFormatted: "R850 admin + CIPC fee",
+    basePriceZar: 425,
+    priceFormatted: "R425 + statutory charges at cost where applicable",
     billingType: "per_submission",
-    description: "Preparation, statutory fee payment, and lodging of annual compliance return with CIPC (tiered by annual turnover).",
+    description: "Annual return administration: R425 plus CIPC statutory charges and penalties at cost. Statutory charges are additional to the administration fee.",
     requiredDocuments: [
       "Approved annual turnover figure or latest trial balance",
       "Confirmation of current directorship and registered address",
@@ -343,10 +343,10 @@ export const RATES_SCHEDULE_2026: ServiceItem[] = [
     id: "cipc_ar_tier1",
     name: "CIPC Annual Return (Turnover under R1 Million)",
     category: "compliance",
-    basePriceZar: 470,
-    priceFormatted: "R470 (or R690 late)",
+    basePriceZar: 425,
+    priceFormatted: "R425 + statutory charges at cost where applicable",
     billingType: "per_submission",
-    description: "Preparation, statutory fee payment, and lodging of annual compliance return with CIPC for turnover under R1M.",
+    description: "Annual return administration: R425 plus CIPC statutory charges and penalties at cost. Statutory charges are additional to the administration fee.",
     requiredDocuments: [
       "Approved annual turnover figure",
       "Confirmation of current beneficial ownership details",
@@ -356,10 +356,10 @@ export const RATES_SCHEDULE_2026: ServiceItem[] = [
     id: "cipc_ar_tier2",
     name: "CIPC Annual Return (Turnover R1M to R10M)",
     category: "compliance",
-    basePriceZar: 815,
-    priceFormatted: "R815 (or R1,000 late)",
+    basePriceZar: 425,
+    priceFormatted: "R425 + statutory charges at cost where applicable",
     billingType: "per_submission",
-    description: "Annual return lodgment including CIPC statutory fees for medium enterprises.",
+    description: "Annual return administration: R425 plus CIPC statutory charges and penalties at cost. Statutory charges are additional to the administration fee.",
     requiredDocuments: [
       "Financial statements or signed turnover declaration",
       "Beneficial ownership register confirmation",
@@ -369,10 +369,10 @@ export const RATES_SCHEDULE_2026: ServiceItem[] = [
     id: "cipc_ar_tier3",
     name: "CIPC Annual Return (Turnover R10M to R25M)",
     category: "compliance",
-    basePriceZar: 3375,
-    priceFormatted: "R3,375 (or R4,375 late)",
+    basePriceZar: 425,
+    priceFormatted: "R425 + statutory charges at cost where applicable",
     billingType: "per_submission",
-    description: "Annual return compliance filing including statutory fees for mid-market entities.",
+    description: "Annual return administration: R425 plus CIPC statutory charges and penalties at cost. Statutory charges are additional to the administration fee.",
     requiredDocuments: [
       "Signed AFS or FAS disclosure extract",
       "Beneficial ownership certificate",
@@ -382,10 +382,10 @@ export const RATES_SCHEDULE_2026: ServiceItem[] = [
     id: "cipc_ar_tier4",
     name: "CIPC Annual Return (Turnover R25M+)",
     category: "compliance",
-    basePriceZar: 5375,
-    priceFormatted: "R5,375 (or R6,500 late)",
+    basePriceZar: 425,
+    priceFormatted: "R425 + statutory charges at cost where applicable",
     billingType: "per_submission",
-    description: "Annual return compliance filing including statutory fees for large commercial entities.",
+    description: "Annual return administration: R425 plus CIPC statutory charges and penalties at cost. Statutory charges are additional to the administration fee.",
     requiredDocuments: [
       "Audited or independently reviewed AFS",
       "Beneficial ownership compliance pack",
@@ -395,10 +395,10 @@ export const RATES_SCHEDULE_2026: ServiceItem[] = [
     id: "cipc_ar_cc",
     name: "CIPC Annual Return (Close Corporation)",
     category: "compliance",
-    basePriceZar: 375,
-    priceFormatted: "R375 (or R565 late)",
+    basePriceZar: 425,
+    priceFormatted: "R425 + statutory charges at cost where applicable",
     billingType: "per_submission",
-    description: "Preparation, statutory fee payment, and lodging of annual compliance return with CIPC for Close Corporations.",
+    description: "Annual return administration: R425 plus CIPC statutory charges and penalties at cost. Statutory charges are additional to the administration fee.",
     requiredDocuments: [
       "Approved annual turnover figure",
       "Confirmation of active members and registered address",
@@ -422,8 +422,8 @@ export const RATES_SCHEDULE_2026: ServiceItem[] = [
     id: "company_registration",
     name: "Private Company (Pty Ltd) Registration - Basic",
     category: "compliance",
-    basePriceZar: 2500,
-    priceFormatted: "R2,500",
+    basePriceZar: 1025,
+    priceFormatted: "R1,025 + statutory charges at cost where applicable",
     billingType: "once_off",
     description: "Fast-track company incorporation with CIPC, standard MOI, share certificates, and tax number.",
     requiredDocuments: [
@@ -462,8 +462,8 @@ export const RATES_SCHEDULE_2026: ServiceItem[] = [
     id: "name_reservation",
     name: "Company Name Reservation (COR9.1 / COR10.1)",
     category: "compliance",
-    basePriceZar: 750,
-    priceFormatted: "R750",
+    basePriceZar: 425,
+    priceFormatted: "R425 + statutory charges at cost where applicable",
     billingType: "per_submission",
     description: "Reservation of proposed company names or defensive name reservations with CIPC.",
     requiredDocuments: [
@@ -474,8 +474,8 @@ export const RATES_SCHEDULE_2026: ServiceItem[] = [
     id: "director_amendment",
     name: "CIPC Director Amendments & Statutory Resolutions",
     category: "compliance",
-    basePriceZar: 1250,
-    priceFormatted: "R1,250",
+    basePriceZar: 625,
+    priceFormatted: "R625 + statutory charges at cost where applicable",
     billingType: "per_submission",
     description: "Appointment or resignation of directors, COR39 lodgment, and board resolutions.",
     requiredDocuments: [
@@ -487,8 +487,8 @@ export const RATES_SCHEDULE_2026: ServiceItem[] = [
     id: "year_end_change",
     name: "Change of Financial Year-End / Special Resolutions",
     category: "compliance",
-    basePriceZar: 1250,
-    priceFormatted: "R1,250",
+    basePriceZar: 625,
+    priceFormatted: "R625 + statutory charges at cost where applicable",
     billingType: "per_submission",
     description: "Application to CIPC to alter financial year end date, registered office, or pass special statutory resolutions.",
     requiredDocuments: [
@@ -631,8 +631,8 @@ export const RATES_SCHEDULE_2026: ServiceItem[] = [
     id: "bookkeeping_essentials",
     name: "Monthly Bookkeeping - Essentials Package",
     category: "bookkeeping",
-    basePriceZar: 3500,
-    priceFormatted: "R3,500 / month",
+    basePriceZar: 1750,
+    priceFormatted: "R1,750 / month",
     billingType: "per_month",
     description: "Bank processing + reconciliations (up to 120 lines), sales/supplier processing (up to 25 each), basic monthly P&L and Balance Sheet.",
     requiredDocuments: [
@@ -644,8 +644,8 @@ export const RATES_SCHEDULE_2026: ServiceItem[] = [
     id: "bookkeeping_growth",
     name: "Monthly Bookkeeping - Growth Package",
     category: "bookkeeping",
-    basePriceZar: 6500,
-    priceFormatted: "R6,500 / month",
+    basePriceZar: 3250,
+    priceFormatted: "R3,250 / month",
     billingType: "per_month",
     description: "Everything in Essentials + monthly management pack with commentary, VAT review & VAT201 submission, and basic tax hygiene.",
     requiredDocuments: [
@@ -657,8 +657,8 @@ export const RATES_SCHEDULE_2026: ServiceItem[] = [
     id: "bookkeeping_scale",
     name: "Monthly Bookkeeping - Scale Package",
     category: "bookkeeping",
-    basePriceZar: 12000,
-    priceFormatted: "R12,000 / month",
+    basePriceZar: 6000,
+    priceFormatted: "R6,000 / month",
     billingType: "per_month",
     description: "Comprehensive outsourced finance function: monthly close checklist, KPI pack, quarterly review call, and stronger debtor/creditor controls.",
     requiredDocuments: [
@@ -696,9 +696,9 @@ export const RATES_SCHEDULE_2026: ServiceItem[] = [
     name: "Monthly Payroll & Payslips (Base + Staff)",
     category: "bookkeeping",
     basePriceZar: 900,
-    priceFormatted: "R900 base + R150/emp/month",
+    priceFormatted: "R900/month includes up to 10 employees; + R75 per employee from the 11th",
     billingType: "per_month",
-    description: "Monthly salary preparation, electronic payslips, and EMP201 submission for up to 20 employees.",
+    description: "Monthly salary preparation, electronic payslips, and EMP201 submission. R900/month covers up to 10 employees; add R75/month for each additional employee from the 11th.",
     requiredDocuments: [
       "Employee master data (ID, tax number, banking details)",
       "Monthly overtime, commission, or deduction schedule",
@@ -891,10 +891,16 @@ export interface QuoteCalculation {
   totalFormatted: string;
 }
 
-export function calculateQuoteTotal(serviceIds: string[]): QuoteCalculation {
+export function calculatePayrollMonthly(headcount: number): number {
+  if (!Number.isInteger(headcount) || headcount < 0) throw new Error("Payroll headcount must be a non-negative whole number");
+  return 900 + Math.max(0, headcount - 10) * 75;
+}
+
+export function calculateQuoteTotal(serviceIds: string[], payrollHeadcount?: number): QuoteCalculation {
   const items = serviceIds
     .map((id) => RATES_SCHEDULE_2026.find((s) => s.id === id))
-    .filter((s): s is ServiceItem => Boolean(s));
+    .filter((s): s is ServiceItem => Boolean(s))
+    .map(item => item.id === "payroll_monthly" && payrollHeadcount !== undefined ? { ...item, basePriceZar: calculatePayrollMonthly(payrollHeadcount) } : item);
 
   const subtotal = items.reduce((sum, item) => sum + item.basePriceZar, 0);
   const vat = Math.round(subtotal * 0.15 * 100) / 100;

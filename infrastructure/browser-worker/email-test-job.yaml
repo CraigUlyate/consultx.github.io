@@ -1,0 +1,36 @@
+name: job-consultx-email-test-dev
+location: southafricanorth
+identity:
+  type: UserAssigned
+  userAssignedIdentities:
+    /subscriptions/0dbaa65b-80fe-4435-ba06-60e1253eb5f5/resourcegroups/rg-consultx-dev/providers/Microsoft.ManagedIdentity/userAssignedIdentities/id-consultx-portal-dev: {}
+properties:
+  environmentId: /subscriptions/0dbaa65b-80fe-4435-ba06-60e1253eb5f5/resourceGroups/rg-consultx-dev/providers/Microsoft.App/managedEnvironments/cae-consultx-dev
+  configuration:
+    triggerType: Manual
+    replicaTimeout: 600
+    replicaRetryLimit: 0
+    manualTriggerConfig:
+      parallelism: 1
+      replicaCompletionCount: 1
+    registries:
+      - server: acrconsultxdev0dbaa65b.azurecr.io
+        identity: /subscriptions/0dbaa65b-80fe-4435-ba06-60e1253eb5f5/resourcegroups/rg-consultx-dev/providers/Microsoft.ManagedIdentity/userAssignedIdentities/id-consultx-portal-dev
+  template:
+    containers:
+      - name: email-test
+        image: acrconsultxdev0dbaa65b.azurecr.io/portal-server:on-demand-email-test
+        command: [node]
+        args: [scripts/send-test-notification.mjs]
+        resources:
+          cpu: 0.25
+          memory: 0.5Gi
+        env:
+          - name: AZURE_CLIENT_ID
+            value: 032f83df-08f7-4da9-8464-dece1ba162be
+          - name: ACS_ENDPOINT
+            value: https://acs-consultx-dev.europe.communication.azure.com
+          - name: CIPC_NOTIFICATION_SENDER
+            value: DoNotReply@notifications.consultx.co.za
+          - name: CIPC_OPERATOR_EMAIL
+            value: craig@consultx.co.za

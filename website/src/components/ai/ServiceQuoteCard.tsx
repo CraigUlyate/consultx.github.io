@@ -1,10 +1,10 @@
 "use client";
 
 import React from "react";
-import Link from "next/link";
+
 import { ServiceQuote } from "@/lib/advisor-api";
 import {
-  ArrowRight,
+
   Calculator,
   FileText,
   HelpCircle,
@@ -64,7 +64,7 @@ export function ServiceQuoteCard({ quote, onTalkToCraig }: ServiceQuoteCardProps
             {svc.requiredDocuments && svc.requiredDocuments.length > 0 && (
               <div className="mt-2 rounded-lg bg-gray-50 p-2 text-[10px] text-gray-600">
                 <span className="font-semibold text-gray-700 flex items-center gap-1 mb-1">
-                  <FileText className="h-3 w-3 text-consultx-green-dark" /> Required for onboarding:
+                  <FileText className="h-3 w-3 text-consultx-green-dark" /> For a future verified intake — do not send here:
                 </span>
                 <ul className="list-disc pl-4 space-y-0.5">
                   {svc.requiredDocuments.slice(0, 2).map((doc, i) => (
@@ -118,13 +118,7 @@ export function ServiceQuoteCard({ quote, onTalkToCraig }: ServiceQuoteCardProps
           <div />
         )}
 
-        <Link
-          href={quote.onboardingUrl}
-          className="inline-flex items-center justify-center gap-2 rounded-xl bg-consultx-green px-4 py-2.5 text-xs font-bold text-white hover:bg-consultx-green-dark transition-all shadow-soft"
-        >
-          Proceed to Onboarding & Payment
-          <ArrowRight className="h-3.5 w-3.5" />
-        </Link>
+        <p className="text-xs text-gray-600">Document intake and payment handoffs are unavailable here until the authenticated workflow passes security verification. Do not upload sensitive documents in public chat.</p>
       </div>
     </div>
   );

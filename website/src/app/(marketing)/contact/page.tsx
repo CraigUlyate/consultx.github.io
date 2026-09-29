@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Mail, MessageCircle, Phone } from "lucide-react";
 import { ContactForm } from "@/components/contact/ContactForm";
+import { BusinessAddress } from "@/components/BusinessAddress";
 
 export const metadata: Metadata = {
   title: "Contact",
@@ -21,6 +22,7 @@ export default function ContactPage() {
         </p>
 
         <div className="mt-10 space-y-4 text-consultx-charcoal">
+          <BusinessAddress directions />
           <a href="tel:+27115160210" className="flex items-center gap-3 font-medium hover:text-consultx-green">
             <Phone className="h-5 w-5 text-consultx-green" />
             (011) 516 0210

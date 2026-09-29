@@ -1,11 +1,14 @@
 "use client";
 
+import ReactMarkdown from "react-markdown";
+import { PUBLIC_CHAT_NOTICE, PUBLIC_CHAT_BLOCK_MESSAGE, containsSensitivePublicInput } from "@/lib/public-chat-safety";
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import {
   Send,
   Sparkles,
   User,
   CheckCircle2,
+  AlertCircle,
   X,
 } from "lucide-react";
 import {
@@ -26,6 +29,7 @@ interface AdvisorChatProps {
 }
 
 const SEED_PROMPTS = [
+  "I want to assess automation opportunities across my business.",
   "I need an independent business valuation for my company.",
   "We copy orders from email into Excel and Sage every morning.",
   "How much does SARS VAT registration and tax clearance cost?",
@@ -44,6 +48,9 @@ export function AdvisorChat({ initialPrompt, onClose, fullPage = false }: Adviso
     },
   ]);
   const [inputText, setInputText] = useState("");
+  const [privacyError, setPrivacyError] = useState("");
+  const [selections, setSelections] = useState<string[]>([]);
+  const composerRef = useRef<HTMLTextAreaElement>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [profile, setProfile] = useState<Partial<ProcessProfile>>({});
   const [activeBlueprint, setActiveBlueprint] = useState<SolutionBlueprint | null>(null);
@@ -57,14 +64,19 @@ export function AdvisorChat({ initialPrompt, onClose, fullPage = false }: Adviso
     phone: "",
     notes: "",
   });
-  const [bookingSubmitted, setBookingSubmitted] = useState<string | null>(null);
+  const [bookingSubmitted, setBookingSubmitted] = useState<{
+    success: boolean;
+    confirmationId: string;
+    message: string;
+  } | null>(null);
   const [isSubmittingLead, setIsSubmittingLead] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const hasTriggeredInitial = useRef(false);
 
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    const stream = messagesEndRef.current?.parentElement;
+    stream?.scrollTo({ top: stream.scrollHeight, behavior: "smooth" });
   };
 
   useEffect(() => {
@@ -75,8 +87,14 @@ export function AdvisorChat({ initialPrompt, onClose, fullPage = false }: Adviso
     async (textToSend?: string) => {
       const query = (textToSend || inputText).trim();
       if (!query || isLoading) return;
+      if (containsSensitivePublicInput(query)) {
+        setPrivacyError(PUBLIC_CHAT_BLOCK_MESSAGE);
+        return;
+      }
+      setPrivacyError("");
 
       setInputText("");
+      setSelections([]);
       const userMsg: Message = {
         id: `usr_${Date.now()}`,
         role: "user",
@@ -95,6 +113,8 @@ export function AdvisorChat({ initialPrompt, onClose, fullPage = false }: Adviso
           id: `asst_${Date.now()}`,
           role: "assistant",
           content: response.replyText,
+          opportunities: response.opportunities,
+          responseMode: response.responseMode,
           clarification: response.clarification,
           blueprint: response.blueprint,
           valuationBrief: response.valuationBrief,
@@ -133,13 +153,15 @@ export function AdvisorChat({ initialPrompt, onClose, fullPage = false }: Adviso
     }
   }, [initialPrompt, handleSend]);
 
-  const handleSelectChip = (chipValue: string) => {
-    handleSend(chipValue);
-  };
+
 
   const handleLeadSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!bookingForm.name || !bookingForm.email) return;
+    if (containsSensitivePublicInput(Object.values(bookingForm).join("\n"))) {
+      setPrivacyError(PUBLIC_CHAT_BLOCK_MESSAGE);
+      return;
+    }
 
     setIsSubmittingLead(true);
     try {
@@ -152,9 +174,14 @@ export function AdvisorChat({ initialPrompt, onClose, fullPage = false }: Adviso
         activeBlueprint || undefined,
         profile as ProcessProfile
       );
-      setBookingSubmitted(res.confirmationId);
+      setBookingSubmitted(res);
     } catch (err) {
       console.error(err);
+      setBookingSubmitted({
+        success: false,
+        confirmationId: "",
+        message: "Failed to connect to the scheduling backend. Please email Craig directly at craig@consultx.co.za or via WhatsApp at +27 82 818 5760.",
+      });
     } finally {
       setIsSubmittingLead(false);
     }
@@ -173,7 +200,7 @@ export function AdvisorChat({ initialPrompt, onClose, fullPage = false }: Adviso
       : "Complimentary 25-Minute Advisory Session";
 
   return (
-    <div className={`flex flex-col bg-white ${fullPage ? "h-[calc(100vh-80px)]" : "h-full"}`}>
+    <div className={`flex min-h-0 flex-col overflow-hidden bg-white ${fullPage ? "h-[calc(100dvh-100px)]" : "h-full"}`}>
       {/* Header */}
       <div className="flex items-center justify-between border-b border-gray-100 bg-consultx-charcoal px-5 py-3 text-white">
         <div className="flex items-center gap-2.5">
@@ -182,9 +209,9 @@ export function AdvisorChat({ initialPrompt, onClose, fullPage = false }: Adviso
           </div>
           <div>
             <div className="flex items-center gap-1.5 font-bold text-sm">
-              Ask AnNa <span className="rounded bg-consultx-green/20 px-1.5 py-0.2 text-[10px] text-consultx-green">CA(SA) AI</span>
+              Ask AnNa <span className="rounded bg-consultx-green/20 px-1.5 py-0.2 text-[10px] text-consultx-green">AI assistant</span>
             </div>
-            <p className="text-[11px] text-gray-300">ConsultX AI Accountant & Solution Advisor</p>
+            <p className="text-[11px] text-gray-300">ConsultX advisor · Supported by Craig Ulyate (CA(SA))</p>
           </div>
         </div>
         {onClose && (
@@ -200,7 +227,7 @@ export function AdvisorChat({ initialPrompt, onClose, fullPage = false }: Adviso
       </div>
 
       {/* Messages Stream */}
-      <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
+      <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4 space-y-4">
         {messages.map((m) => (
           <div
             key={m.id}
@@ -219,7 +246,15 @@ export function AdvisorChat({ initialPrompt, onClose, fullPage = false }: Adviso
                   : "bg-gray-50 text-gray-800 border border-gray-100 rounded-bl-none shadow-xs"
               }`}
             >
-              <div className="whitespace-pre-wrap">{m.content}</div>
+              <div className="space-y-2 break-words">
+                <ReactMarkdown skipHtml components={{ p: ({children}) => <p className="whitespace-pre-wrap">{children}</p>, a: ({children}) => <span>{children}</span>, img: () => null }}>{m.clarification ? m.content.replace(m.clarification.question, "").trim() : m.content}</ReactMarkdown>
+              </div>
+              {m.responseMode && <p className="mt-2 text-[10px] text-gray-500">{m.responseMode === "offline" ? "Offline guidance · limited rule-based assessment; no actions executed" : "Live advisor"}</p>}
+              {m.opportunities && m.opportunities.length > 0 && <div className="mt-3 space-y-2" aria-label="Candidate opportunities">
+                {m.opportunities.map(o => <div key={o.title} className="rounded-lg border border-gray-200 bg-white p-3">
+                  <strong>{o.title}</strong><p className="mt-1">Reported: {o.evidence}</p><p>Candidate: {o.benefit}</p><p>Effort: {o.effort}</p><p>To validate: {o.unknowns}</p>
+                </div>)}
+              </div>}
 
               {/* Dynamic Clarification Chips */}
               {m.clarification && (
@@ -236,18 +271,25 @@ export function AdvisorChat({ initialPrompt, onClose, fullPage = false }: Adviso
                     <p className="text-[10px] text-gray-400 mb-2">{m.clarification.subtext}</p>
                   )}
                   <div className="flex flex-wrap gap-1.5">
+                    <p className="w-full text-gray-500">Choose {m.clarification.multiple ? "one or more options" : "an option"} or type your answer below.</p>
                     {m.clarification.options.map((opt) => (
                       <button
                         key={opt.value}
                         type="button"
-                        onClick={() => handleSelectChip(opt.value)}
-                        disabled={isLoading}
-                        className="rounded-full border border-consultx-green/40 bg-white px-3 py-1.5 text-[11px] font-medium text-consultx-charcoal hover:bg-consultx-green-soft hover:border-consultx-green transition-all shadow-xs"
+                        aria-pressed={m.clarification?.multiple ? selections.includes(opt.value) : undefined}
+                        onClick={() => m.clarification?.multiple ? setSelections(values => values.includes(opt.value) ? values.filter(v => v !== opt.value) : [...values, opt.value]) : handleSend(opt.value)}
+                        disabled={isLoading || m.id !== messages.at(-1)?.id}
+                        className="rounded-full border border-consultx-green/40 bg-white px-3 py-1.5 text-[11px] font-medium text-consultx-charcoal hover:bg-consultx-green-soft aria-pressed:bg-consultx-green-soft aria-pressed:border-consultx-green disabled:opacity-50 hover:border-consultx-green transition-all shadow-xs"
                       >
                         {opt.label}
                       </button>
                     ))}
                   </div>
+                  {m.id === messages.at(-1)?.id && <div className="mt-2 flex flex-wrap gap-3">
+                    <button type="button" disabled={isLoading} onClick={() => composerRef.current?.focus()} className="underline">Write my own answer</button>
+                    <button type="button" disabled={isLoading} onClick={() => handleSend("Not sure")} className="underline">Not sure</button>
+                    <button type="button" disabled={isLoading} onClick={() => handleSend("Skip for now")} className="underline">Skip for now</button>
+                  </div>}
                 </div>
               )}
 
@@ -319,34 +361,40 @@ export function AdvisorChat({ initialPrompt, onClose, fullPage = false }: Adviso
       )}
 
       {/* Input Bar */}
-      <div className="border-t border-gray-100 bg-white p-3">
+      <div className="shrink-0 border-t border-gray-100 bg-white p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+        <p id="public-chat-notice" className="mb-2 text-[11px] text-gray-600">{PUBLIC_CHAT_NOTICE}</p>
+        {privacyError && <p role="alert" className="mb-2 text-xs text-red-700">{privacyError}</p>}
+        {selections.length > 0 && <p className="mb-2 text-xs">Selected: {selections.join(", ")}. Add details below, then send to continue.</p>}
         <form
           onSubmit={(e) => {
             e.preventDefault();
-            handleSend();
+            handleSend([...selections, inputText].filter(Boolean).join("; "));
           }}
           className="flex items-center gap-2"
         >
-          <input
-            type="text"
+          <textarea
+            ref={composerRef}
+            rows={2}
+            aria-label="Your message to AnNa"
+            aria-describedby="public-chat-notice"
             value={inputText}
             onChange={(e) => setInputText(e.target.value)}
-            placeholder="Ask AnNa about valuations, fixed fees, or automation..."
+            placeholder={messages.at(-1)?.clarification?.inputPlaceholder || "Type your answer, ask a question, or correct earlier details…"}
             className="flex-1 rounded-xl border border-gray-200 bg-gray-50/50 px-4 py-2.5 text-xs text-gray-900 placeholder-gray-400 focus:border-consultx-green focus:bg-white focus:outline-none focus:ring-1 focus:ring-consultx-green"
             disabled={isLoading}
           />
           <button
             type="submit"
-            disabled={isLoading || !inputText.trim()}
+            disabled={isLoading || (!inputText.trim() && selections.length === 0)}
             className="flex h-10 w-10 items-center justify-center rounded-xl bg-consultx-green text-white shadow-soft transition-all hover:bg-consultx-green-dark disabled:opacity-40"
-            aria-label="Send message"
+            aria-label={selections.length ? "Continue with selected answers" : "Send message"}
           >
             <Send className="h-4 w-4" />
           </button>
         </form>
 
         <p className="mt-1.5 text-center text-[10px] text-gray-400">
-          POPIA Protected · ConsultX (Pty) Ltd · Johannesburg, South Africa
+          ConsultX (Pty) Ltd · Johannesburg, South Africa
         </p>
       </div>
 
@@ -377,27 +425,49 @@ export function AdvisorChat({ initialPrompt, onClose, fullPage = false }: Adviso
 
             {bookingSubmitted ? (
               <div className="mt-6 text-center">
-                <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-consultx-green-soft text-consultx-green">
-                  <CheckCircle2 className="h-6 w-6" />
-                </div>
-                <h4 className="mt-3 font-bold text-sm text-gray-900">Consultation Request Confirmed</h4>
-                <p className="mt-2 text-xs text-gray-600 leading-relaxed">
-                  Your reference ID is <strong className="text-consultx-black">{bookingSubmitted}</strong>.
-                  Craig has received your brief. A calendar invitation and briefing confirmation has been sent to your email.
-                </p>
+                {bookingSubmitted.success ? (
+                  <>
+                    <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-consultx-green-soft text-consultx-green">
+                      <CheckCircle2 className="h-6 w-6" />
+                    </div>
+                    <h4 className="mt-3 font-bold text-sm text-gray-900">Consultation Request Received</h4>
+                    <p className="mt-2 text-xs text-gray-600 leading-relaxed">
+                      Your reference ID is <strong className="text-consultx-black">{bookingSubmitted.confirmationId}</strong>.
+                      {bookingSubmitted.message}
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-amber-100 text-amber-600">
+                      <AlertCircle className="h-6 w-6" />
+                    </div>
+                    <h4 className="mt-3 font-bold text-sm text-gray-900">Offline Guidance Preview</h4>
+                    <p className="mt-2 text-xs text-gray-600 leading-relaxed">
+                      {bookingSubmitted.message}
+                    </p>
+                    <a
+                      href={`mailto:craig@consultx.co.za?subject=${encodeURIComponent(`ConsultX Advisory Request - ${bookingForm.name}`)}&body=${encodeURIComponent(`Name: ${bookingForm.name}\nEmail: ${bookingForm.email}\nPhone: ${bookingForm.phone}\nCompany: ${bookingForm.company}\nNotes: ${bookingForm.notes}`)}`}
+                      className="mt-3 inline-block rounded-xl bg-consultx-green px-4 py-2 text-xs font-bold text-white hover:bg-consultx-green-dark transition-all"
+                    >
+                      Email Brief Directly to Craig
+                    </a>
+                  </>
+                )}
                 <button
                   type="button"
                   onClick={() => {
                     setShowBooking(false);
                     setBookingSubmitted(null);
                   }}
-                  className="mt-5 w-full rounded-xl bg-consultx-black py-2.5 text-xs font-semibold text-white hover:bg-gray-800"
+                  className="mt-4 w-full rounded-xl bg-consultx-black py-2.5 text-xs font-semibold text-white hover:bg-gray-800"
                 >
                   Return to Chat
                 </button>
               </div>
             ) : (
               <form onSubmit={handleLeadSubmit} className="mt-4 space-y-3 text-xs">
+                <p className="text-gray-600">Contact details and a high-level business description only. Do not include documents, account details, payroll records or credentials.</p>
+                {privacyError && <p role="alert" className="text-red-700">{privacyError}</p>}
                 <div>
                   <label className="block font-medium text-gray-700">Full Name *</label>
                   <input

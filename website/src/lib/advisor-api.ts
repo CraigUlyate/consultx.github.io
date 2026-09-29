@@ -10,7 +10,12 @@
 
 import { RATES_SCHEDULE_2026, ServiceItem, calculateQuoteTotal } from "@/lib/rates-schedule";
 
+import { assessWorkflow, type AssessmentState, type Opportunity } from "./advisor-assessment";
+import { adaptPublicReply } from "./advisor-response";
+import { containsSensitivePublicInput, PUBLIC_CHAT_BLOCK_MESSAGE } from "./public-chat-safety";
+
 export interface ProcessProfile {
+  assessment?: AssessmentState;
   visitorObjective: string;
   painPoint: string;
   specificFriction?: string;
@@ -36,6 +41,8 @@ export interface ProcessProfile {
   valuationTurnover?: string;
   valuationRecords?: string;
   selectedServiceIds?: string[];
+  sourceChannel?: string;
+  destinationLedger?: string;
 }
 
 export interface IndicativeQuote {
@@ -52,14 +59,16 @@ export interface SolutionBlueprint {
   title: string;
   isTailored?: boolean;
   problemRestatement: string;
+  sourceChannel?: string;
+  destinationLedger?: string;
   currentFlow: string[];
   proposedFlow: string[];
   architecturePattern: string;
   systemsInvolved: string[];
   humanCheckpoints: string[];
   expectedBenefit: string;
-  opportunityScore: number;
-  feasibilityRating: "High" | "Medium" | "Complex";
+  opportunityScore: number | null;
+  feasibilityRating: "High" | "Medium" | "Complex" | "Unverified";
   risksAndControls: string[];
   whatToValidate: string[];
   indicativeQuote: IndicativeQuote;
@@ -98,6 +107,8 @@ export interface ClarificationOption {
 }
 
 export interface ClarificationQuestion {
+  multiple?: boolean;
+  inputPlaceholder?: string;
   id: string;
   stepNumber?: number;
   totalSteps?: number;
@@ -117,6 +128,8 @@ export interface Message {
   valuationBrief?: ValuationBrief;
   serviceQuote?: ServiceQuote;
   isStreaming?: boolean;
+  opportunities?: Opportunity[];
+  responseMode?: "live" | "offline";
 }
 
 export interface LeadSubmission {
@@ -241,6 +254,55 @@ export const PRESET_DIAGNOSTIC_BANK = {
 };
 
 /**
+ * Adaptive Diagnostic Questions for Context-Aware Probing
+ */
+export const EXPENSE_CARD_QUESTION: ClarificationQuestion = {
+  id: "probe_card_structure",
+  stepNumber: 2,
+  totalSteps: 3,
+  category: "software",
+  question: "Question 2 of 3: How are company cards and staff expenses structured?",
+  subtext: "Determines whether this is a direct credit card feed match or staff reimbursement flow",
+  options: [
+    {
+      label: "💳 Company cards with central monthly statement",
+      value: "Company credit cards where staff submit slips to match the monthly card statement feed",
+    },
+    {
+      label: "👤 Staff personal cards requiring reimbursements",
+      value: "Staff pay personally and claim reimbursement back into their bank accounts",
+    },
+    {
+      label: "🔄 Mix of company cards, claims, and petty cash",
+      value: "Combination of company credit cards, staff reimbursements, and petty cash slips",
+    },
+  ],
+};
+
+export const DEBTOR_WORKFLOW_QUESTION: ClarificationQuestion = {
+  id: "probe_debtor_workflow",
+  stepNumber: 2,
+  totalSteps: 3,
+  category: "software",
+  question: "Question 2 of 3: What is the primary cause of debtor delays in your business?",
+  subtext: "Shapes dispute handling, payment link integration, and escalation rules",
+  options: [
+    {
+      label: "⏳ Customers simply forget without persistent reminders",
+      value: "Inconsistent follow-up cadence; customers pay once reminded politely",
+    },
+    {
+      label: "❓ Invoicing queries or missing delivery docs stall payment",
+      value: "Customer queries and missing delivery documents delay invoice approval",
+    },
+    {
+      label: "📉 Cash flow constraints requiring structured payment terms",
+      value: "Customers need flexible payment arrangements and installment terms",
+    },
+  ],
+};
+
+/**
  * Question Bank for Specialist Business Valuation Scoping
  */
 export const VALUATION_DIAGNOSTIC_BANK = {
@@ -288,7 +350,7 @@ export const VALUATION_DIAGNOSTIC_BANK = {
 };
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_ADVISOR_API_URL || "";
-const DEFAULT_TIMEOUT_MS = 40_000;
+const DEFAULT_TIMEOUT_MS = 15_000;
 
 function isTransientHttpStatus(status: number): boolean {
   return status === 408 || status === 425 || status === 429 || status >= 500;
@@ -327,51 +389,55 @@ export async function sendAdvisorTurn(
   profile?: Partial<ProcessProfile>
 ): Promise<{
   replyText: string;
+  opportunities?: Opportunity[];
+  responseMode?: "live" | "offline";
   clarification?: ClarificationQuestion;
   blueprint?: SolutionBlueprint;
   valuationBrief?: ValuationBrief;
   serviceQuote?: ServiceQuote;
   updatedProfile: ProcessProfile;
 }> {
+  if ([userText, ...history.map(h => h.content)].some(containsSensitivePublicInput)) {
+    throw new Error(PUBLIC_CHAT_BLOCK_MESSAGE);
+  }
   if (BACKEND_URL) {
-    const MAX_ATTEMPTS = 3;
-    const BACKOFFS = [600, 1400];
+    const MAX_ATTEMPTS = 2;
+    const BACKOFFS = [800];
 
     for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
       try {
-        const res = await fetchWithTimeout(`${BACKEND_URL}/api/v1/advisor/chat`, {
+        const res = await fetchWithTimeout(`${BACKEND_URL}/api/v1/ai/public-advisor`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            sessionId,
-            history,
             message: userText,
-            profile,
-            timezone: "Africa/Johannesburg",
+            history: history.slice(0, history.at(-1)?.role === "user" && history.at(-1)?.content === userText ? -1 : undefined).filter(h => h.role !== "system").map((h) => ({ role: h.role, content: h.content })),
           }),
         });
 
         if (!res.ok) {
           if (isTransientHttpStatus(res.status) && attempt < MAX_ATTEMPTS) {
-            await sleep(BACKOFFS[attempt - 1] || 1000);
+            await sleep(BACKOFFS[attempt - 1] || 800);
             continue;
           }
           throw new Error(`Advisor API error: ${res.status} ${res.statusText}`);
         }
 
-        return await res.json();
+        const data = await res.json();
+        const local = assessWorkflow(userText, profile);
+        return adaptPublicReply(data, local.updatedProfile);
       } catch (err) {
         if (attempt === MAX_ATTEMPTS) {
           console.warn("Backend unavailable, falling back to client simulation:", err);
           break;
         }
-        await sleep(BACKOFFS[attempt - 1] || 1000);
+        await sleep(BACKOFFS[attempt - 1] || 800);
       }
     }
   }
 
   // Fallback interactive simulation (enables immediate testing on website before Cloud Run is wired)
-  return simulateAdvisorTurn(userText, history, profile);
+  return { ...await simulateAdvisorTurn(userText, history, profile), responseMode: "offline" };
 }
 
 /**
@@ -383,6 +449,9 @@ export async function submitAdvisorLead(
   blueprint?: SolutionBlueprint,
   profile?: ProcessProfile
 ): Promise<{ success: boolean; confirmationId: string; message: string }> {
+  if (containsSensitivePublicInput(JSON.stringify({ lead, blueprint, profile }))) {
+    return { success: false, confirmationId: "", message: PUBLIC_CHAT_BLOCK_MESSAGE };
+  }
   if (BACKEND_URL) {
     try {
       const res = await fetchWithTimeout(`${BACKEND_URL}/api/v1/advisor/lead`, {
@@ -400,15 +469,15 @@ export async function submitAdvisorLead(
         return await res.json();
       }
     } catch (e) {
-      console.warn("Lead backend submission failed, falling back to local acknowledgment:", e);
+      console.warn("Lead backend submission failed, falling back to offline notification:", e);
     }
   }
 
-  // Fallback acknowledgment
+  // Honest Fallback: Never invent confirmation IDs or claim Craig received the brief when delivery was not persisted
   return {
-    success: true,
-    confirmationId: `CX-${Math.floor(100000 + Math.random() * 900000)}`,
-    message: `Thank you ${lead.name}. Your consultation request has been confirmed. Craig Ulyate (CA(SA)) has received your pre-call brief and contact details.`,
+    success: false,
+    confirmationId: "",
+    message: `Thank you ${lead.name}. Our live scheduling backend is currently in offline preview mode. Your brief could not be delivered automatically. Please email Craig directly at craig@consultx.co.za or contact him on WhatsApp at +27 82 818 5760 with your brief details.`,
   };
 }
 
@@ -676,6 +745,92 @@ function matchServicesFromQuery(query: string): ServiceItem[] {
 }
 
 /**
+ * Directional System Topology & Role Detection
+ */
+export interface SystemTopology {
+  sources: string[];
+  destinations: string[];
+  allSystems: string[];
+}
+
+export function detectSystemTopology(text: string): SystemTopology {
+  const lower = text.toLowerCase();
+  const sources: string[] = [];
+  const destinations: string[] = [];
+
+  // Sources / Ingress Channels
+  if (lower.includes("whatsapp") || lower.includes("slip") || lower.includes("receipt") || lower.includes("photo")) {
+    sources.push("WhatsApp / Slips");
+  }
+  if (lower.includes("email") || lower.includes("outlook") || lower.includes("inbox") || lower.includes("attachment")) {
+    sources.push("Outlook / Email");
+  }
+  if (lower.includes("excel") || lower.includes("spreadsheet") || lower.includes("sheet") || lower.includes("csv")) {
+    sources.push("Microsoft Excel");
+  }
+  if (lower.includes("pdf") || lower.includes("document") || lower.includes("paper")) {
+    if (!sources.includes("WhatsApp / Slips")) {
+      sources.push("PDF Invoices / Documents");
+    }
+  }
+
+  // Destinations / Accounting Packages & ERPs
+  if (lower.includes("xero")) {
+    destinations.push("Xero");
+  }
+  if (lower.includes("sage") || lower.includes("pastel")) {
+    destinations.push("Sage Business Cloud");
+  }
+  if (lower.includes("quickbooks") || lower.includes("qbo")) {
+    destinations.push("QuickBooks Online");
+  }
+  if (lower.includes("erp") || lower.includes("syspro") || lower.includes("sap") || lower.includes("database")) {
+    destinations.push("Custom ERP / Core Ledger");
+  }
+
+  const all = [...sources, ...destinations];
+  return {
+    sources: Array.from(new Set(sources)),
+    destinations: Array.from(new Set(destinations)),
+    allSystems: all.length > 0 ? Array.from(new Set(all)) : ["WhatsApp / Slips", "Xero"],
+  };
+}
+
+export function orderSystemsDirectionally(systems: string[]): string[] {
+  const sourcesPriority = ["WhatsApp / Slips", "Outlook / Email", "PDF Invoices / Documents", "Microsoft Excel"];
+  const destinationsPriority = ["Xero", "Sage Business Cloud", "QuickBooks Online", "Custom ERP / Core Ledger"];
+
+  const sources = systems.filter((s) => sourcesPriority.some((p) => s.toLowerCase().includes(p.toLowerCase().split(" ")[0])));
+  const destinations = systems.filter((s) => destinationsPriority.some((p) => s.toLowerCase().includes(p.toLowerCase().split(" ")[0])));
+  const others = systems.filter((s) => !sources.includes(s) && !destinations.includes(s));
+
+  return Array.from(new Set([...sources, ...destinations, ...others]));
+}
+
+export function synthesizeProblemDiagnosis(query: string, systems: string[]): string {
+  const q = query.toLowerCase();
+  const isExpense = q.includes("slip") || q.includes("receipt") || q.includes("expense") || q.includes("whatsapp") || q.includes("card");
+  const isDebtor = q.includes("debtor") || q.includes("receivable") || q.includes("chase") || q.includes("payment");
+  const isMonthEnd = q.includes("month end") || q.includes("close") || q.includes("reconcil") || q.includes("bank rec");
+
+  const ledger = systems.find((s) => ["Xero", "Sage Business Cloud", "QuickBooks Online", "Custom ERP / Core Ledger"].includes(s)) || "Xero";
+
+  if (isExpense) {
+    if (q.includes("card") || q.includes("credit card") || q.includes("statement")) {
+      return `Automating decentralized credit card slip capture via WhatsApp and reconciling against ${ledger} credit card feeds for complete SARS VAT compliance`;
+    }
+    return `Intelligent receipt & slip intake via WhatsApp with automated line-item extraction and posting into ${ledger}`;
+  }
+  if (isDebtor) {
+    return `Automated debtor chasing and cash collection workflows synced with ${ledger} to compress Days Sales Outstanding (DSO)`;
+  }
+  if (isMonthEnd) {
+    return `Automating bank & credit card statement matching, recurring transaction GL allocation, and month-end close in ${ledger}`;
+  }
+  return `Automating manual data movement and cross-system reconciliation into ${ledger}`;
+}
+
+/**
  * High-fidelity client simulation engine implementing Multi-Track Intent Routing
  */
 function simulateAdvisorTurn(
@@ -684,6 +839,8 @@ function simulateAdvisorTurn(
   currentProfile?: Partial<ProcessProfile>
 ): Promise<{
   replyText: string;
+  opportunities?: Opportunity[];
+  responseMode?: "live" | "offline";
   clarification?: ClarificationQuestion;
   blueprint?: SolutionBlueprint;
   valuationBrief?: ValuationBrief;
@@ -696,18 +853,15 @@ function simulateAdvisorTurn(
       const currentStage = currentProfile?.diagnosticStage || "initial";
       const track = currentProfile?.track || "solutions";
 
-      // Detect systems
+      // Detect systems with directional topology
+      const topology = detectSystemTopology(userText + " " + (currentProfile?.painPoint || ""));
       const detectedSystems: string[] = currentProfile?.primarySystems ? [...currentProfile.primarySystems] : [];
-      if (lower.includes("sage")) detectedSystems.push("Sage Business Cloud");
-      if (lower.includes("xero")) detectedSystems.push("Xero");
-      if (lower.includes("excel") || lower.includes("spreadsheet")) detectedSystems.push("Microsoft Excel");
-      if (lower.includes("email") || lower.includes("outlook")) detectedSystems.push("Outlook / Email");
-      if (lower.includes("quickbooks") || lower.includes("qbo")) detectedSystems.push("QuickBooks Online");
-      if (lower.includes("pdf") || lower.includes("invoice")) detectedSystems.push("PDF Invoices / Documents");
-      if (lower.includes("whatsapp") || lower.includes("slip")) detectedSystems.push("WhatsApp / Slips");
+      topology.allSystems.forEach((s) => {
+        if (!detectedSystems.includes(s)) detectedSystems.push(s);
+      });
 
-      const uniqueSystems = Array.from(new Set(detectedSystems));
-      const systemsToReport = uniqueSystems.length > 0 ? uniqueSystems : ["Core Accounting", "Excel"];
+      const orderedSystems = orderSystemsDirectionally(detectedSystems);
+      const systemsToReport = orderedSystems.length > 0 ? orderedSystems : ["WhatsApp / Slips", "Xero"];
 
       const updatedProfile: ProcessProfile = {
         visitorObjective: currentProfile?.visitorObjective || "ConsultX Advisory & Solution Scoping",
@@ -855,115 +1009,8 @@ function simulateAdvisorTurn(
         return;
       }
 
-      // TRACK C: WORKFLOW SOLUTIONS (Default Diagnostic)
-      if (currentStage === "initial") {
-        const wantsDraftImmediate =
-          lower.includes("draft") || lower.includes("initial") || lower.includes("blueprint now");
-        const wantsRefineImmediate =
-          lower.includes("refine") || lower.includes("question") || lower.includes("focused");
-
-        if (wantsRefineImmediate) {
-          updatedProfile.diagnosticStage = "probing_pain";
-          resolve({
-            replyText: `Excellent. Let's run a quick 3-question diagnostic so I can build a precision solution for your exact setup.\n\n${PRESET_DIAGNOSTIC_BANK.pain.question}`,
-            clarification: PRESET_DIAGNOSTIC_BANK.pain,
-            updatedProfile,
-          });
-          return;
-        }
-
-        if (wantsDraftImmediate) {
-          updatedProfile.diagnosticStage = "preliminary_drafted";
-          const draftBlueprint = buildBlueprint(updatedProfile, false);
-          resolve({
-            replyText: `Here is your **Preliminary Solution Hypothesis** based on standard CA(SA) best practices. \n\nIf you would like a **more focused solution** tailored to your exact team size, software stack, and weekly hours, click below to answer 3 quick questions:`,
-            blueprint: draftBlueprint,
-            clarification: {
-              id: "refine_after_draft",
-              question: "Would you like to sharpen this with 3 quick questions?",
-              options: [
-                { label: "✨ Refine & Focus This Blueprint (3 Questions)", value: "Refine this solution with 3 questions" },
-                { label: "📅 Review with Craig As Is", value: "Review this solution with Craig" },
-              ],
-            },
-            updatedProfile,
-          });
-          return;
-        }
-
-        updatedProfile.diagnosticStage = "initial";
-        resolve({
-          replyText: `I've diagnosed the core workflow challenge: **${updatedProfile.painPoint}**.\n\nWe can take two approaches:\n\n1. **Draft Initial Solution Now**: I can produce an indicative blueprint right away based on standard CA(SA) best-practice automation patterns.\n2. **Deep-Dive Diagnostic (3 quick questions)**: I can ask you 3 targeted questions to give you a **precision-tailored blueprint** matching your exact software, pain points, and scale.`,
-          clarification: PRESET_DIAGNOSTIC_BANK.routing,
-          updatedProfile,
-        });
-        return;
-      }
-
-      if (currentStage === "preliminary_drafted") {
-        if (lower.includes("refine") || lower.includes("question") || lower.includes("focus")) {
-          updatedProfile.diagnosticStage = "probing_pain";
-          resolve({
-            replyText: `Great! Let's tailor the blueprint to your exact business reality.\n\n${PRESET_DIAGNOSTIC_BANK.pain.question}`,
-            clarification: PRESET_DIAGNOSTIC_BANK.pain,
-            updatedProfile,
-          });
-          return;
-        }
-      }
-
-      if (currentStage === "probing_pain" || lower.includes("refine")) {
-        updatedProfile.specificFriction = userText;
-        updatedProfile.confidenceScore = 0.65;
-        updatedProfile.diagnosticStage = "probing_software";
-
-        resolve({
-          replyText: `Noted: **"${userText}"**. That friction costs serious management time and creates hidden risk.\n\n${PRESET_DIAGNOSTIC_BANK.software.question}`,
-          clarification: PRESET_DIAGNOSTIC_BANK.software,
-          updatedProfile,
-        });
-        return;
-      }
-
-      if (currentStage === "probing_software") {
-        updatedProfile.primarySystems = uniqueSystems.length > 0 ? uniqueSystems : [userText];
-        updatedProfile.confidenceScore = 0.78;
-        updatedProfile.diagnosticStage = "probing_scale";
-
-        resolve({
-          replyText: `Got it. The solution will integrate with **${updatedProfile.primarySystems.join(", ")}**.\n\n${PRESET_DIAGNOSTIC_BANK.scale.question}`,
-          clarification: PRESET_DIAGNOSTIC_BANK.scale,
-          updatedProfile,
-        });
-        return;
-      }
-
-      if (currentStage === "probing_scale") {
-        updatedProfile.volumeOrScale = userText;
-        updatedProfile.confidenceScore = 0.95;
-        updatedProfile.diagnosticStage = "tailored";
-
-        if (userText.includes("Light")) updatedProfile.estimatedHoursSpentMonthly = 10;
-        else if (userText.includes("Medium")) updatedProfile.estimatedHoursSpentMonthly = 24;
-        else if (userText.includes("Heavy")) updatedProfile.estimatedHoursSpentMonthly = 55;
-        else if (userText.includes("Enterprise")) updatedProfile.estimatedHoursSpentMonthly = 140;
-
-        const tailoredBlueprint = buildBlueprint(updatedProfile, true);
-
-        resolve({
-          replyText: `Thank you for the additional context. Based on your specific pain (**${updatedProfile.specificFriction || "Manual bottleneck"}**), your ecosystem (**${updatedProfile.primarySystems.join(", ")}**), and your volume (**${updatedProfile.volumeOrScale}**), I have generated your **Tailored ConsultX Solution Blueprint** below.`,
-          blueprint: tailoredBlueprint,
-          updatedProfile,
-        });
-        return;
-      }
-
-      const generalBlueprint = buildBlueprint(updatedProfile, true);
-      resolve({
-        replyText: `I have updated your Solution Blueprint to incorporate: "${userText}".`,
-        blueprint: generalBlueprint,
-        updatedProfile,
-      });
+      // Evidence-led discovery; options and typed answers use the same interpreter.
+      resolve(assessWorkflow(userText, currentProfile));
     }, 600);
   });
 }
@@ -1018,104 +1065,5 @@ function buildValuationBrief(profile: ProcessProfile): ValuationBrief {
     typicalDeliveryWeeks: delivery,
     executiveSummary,
     leadAdvisor: "Craig Ulyate (CA(SA))",
-  };
-}
-
-/**
- * Generator for Preliminary vs. Tailored Solution Blueprints
- */
-function buildBlueprint(profile: ProcessProfile, isTailored: boolean): SolutionBlueprint {
-  const pain = (profile.painPoint + " " + (profile.specificFriction || "")).toLowerCase();
-  const systems = profile.primarySystems.length > 0 ? profile.primarySystems : ["Accounting Core", "Excel"];
-  const isDebtor = pain.includes("debtor") || pain.includes("receivable") || pain.includes("chase") || pain.includes("payment");
-  const isExpense = pain.includes("expense") || pain.includes("slip") || pain.includes("receipt") || pain.includes("vat");
-
-  let title = "Cross-System Document Intake & Reconciliation Pipeline";
-  let pattern = "Serverless Cloud Worker + Document AI + Accounting API Gateway";
-  let expectedBenefit = "Saves ~20 to 30 hours of monthly administrative labour; eliminates duplicate capturing.";
-  let quote: IndicativeQuote = {
-    setupTier: "Standard Integration",
-    estimatedSetupZar: "R12,500 – R19,500",
-    estimatedMonthlyZar: "R1,450 / month",
-    expectedPaybackMonths: "1.5 months",
-    pricingBasis: "Turnkey pipeline build, data mapping, integration connector, and user training.",
-  };
-
-  if (isDebtor) {
-    title = "Automated Debtor Chasing & Working Capital Accelerator";
-    pattern = "Nightly ERP Sync + Smart Follow-Up Cadence + Dispute Interceptor";
-    expectedBenefit = `Reduces DSO (Days Sales Outstanding) by 8–14 days; frees ~${profile.estimatedHoursSpentMonthly || 18} hours/month of finance admin.`;
-    quote = {
-      setupTier: "Standard Integration",
-      estimatedSetupZar: "R11,000 – R16,500",
-      estimatedMonthlyZar: "R1,850 / month",
-      expectedPaybackMonths: "1 month",
-      pricingBasis: "Fixed turnkey deployment including connector configuration, email templates, and control testing.",
-    };
-  } else if (isExpense) {
-    title = "Intelligent Expense Intake & OCR Reconciliation (AnNa Expense)";
-    pattern = "Document Intelligence OCR + AnNa Expense Engine + Direct Accounting API";
-    expectedBenefit = "90% reduction in expense data capture time; zero lost tax invoices before VAT deadlines.";
-    quote = {
-      setupTier: "Quick-Start",
-      estimatedSetupZar: "R6,500 – R9,500",
-      estimatedMonthlyZar: "R950 – R1,950 / month",
-      expectedPaybackMonths: "Under 1 month",
-      pricingBasis: "AnNa Expense SaaS subscription tier plus initial GL chart of accounts mapping.",
-    };
-  }
-
-  if (isTailored) {
-    title = `[Tailored] ${title}`;
-    expectedBenefit = `${expectedBenefit} Custom-tuned for ${systems.join(" & ")}.`;
-  } else {
-    title = `[Preliminary] ${title}`;
-  }
-
-  return {
-    id: `BP-${Date.now()}`,
-    createdAt: new Date().toISOString(),
-    isTailored,
-    title,
-    problemRestatement: profile.painPoint,
-    currentFlow: [
-      `Data originates in ${systems[0] || "emails / documents"}`,
-      "Operator manually reads details and copies into spreadsheets",
-      "Verify account codes and balances manually",
-      `Key transaction into ${systems[1] || "accounting system"} with delay`,
-    ],
-    proposedFlow: [
-      `Automated listener captures events directly from ${systems[0] || "source"}`,
-      "Validation worker checks master data, duplicates, and tax rules",
-      `Direct batch creation in ${systems[1] || "core ERP"} pending sign-off`,
-      "Real-time exception alert for variances or unknown accounts",
-    ],
-    architecturePattern: pattern,
-    systemsInvolved: systems,
-    humanCheckpoints: [
-      "Maker-checker control: automation drafts the batch; authorised user releases it",
-      "Dispute / variance exception queue for human investigation",
-    ],
-    expectedBenefit,
-    opportunityScore: isTailored ? 9 : 8,
-    feasibilityRating: "High",
-    risksAndControls: [
-      "Strict exclusion lists and duplicate detection preventing double-posting",
-      "POPIA-compliant customer communication logging and audit trail",
-    ],
-    whatToValidate: isTailored
-      ? [
-          `Confirm ${systems[0]} API user credentials and permissions`,
-          "Review master data formatting with Craig during kickoff",
-        ]
-      : [
-          "Exact software version and available API endpoints",
-          "Team volume variability across month-end peaks",
-        ],
-    indicativeQuote: quote,
-    nextStepTitle: "Review this solution with Craig",
-    nextStepDescription: isTailored
-      ? "Book a complimentary 20-minute architecture review with Craig Ulyate (CA(SA)) to review this tailored blueprint and finalize fixed-price scope."
-      : "Book a complimentary 20-minute architecture session with Craig to validate your assumptions and get a formal proposal.",
   };
 }

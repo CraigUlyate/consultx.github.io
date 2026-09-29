@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+set -euo pipefail
+if [[ "${1:-}" != "activate" && "${1:-}" != "stop" ]]; then
+  echo "Usage: consultx-cipc-session <activate|stop>"
+  exit 64
+fi
+docker exec consultx-cipc-session-agent node /app/operator-session.mjs "$1" --confirmed

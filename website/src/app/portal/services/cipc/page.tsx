@@ -84,7 +84,7 @@ export default function CipcComplianceWorkspacePage() {
     }
   };
 
-  const consultxFee = 850; // Fixed professional filing fee
+  const consultxFee = 425; // Fixed professional filing fee
   const cipcStatutoryFee = getCipcStatutoryFee(turnoverBand, isLate);
   const totalDue = consultxFee + cipcStatutoryFee;
 

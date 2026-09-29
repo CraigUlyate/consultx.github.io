@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+set -euo pipefail
+az login --identity --username 96f801ed-ba4a-4f26-aaa3-372c61e5b8ab --allow-no-subscriptions >/dev/null
+az acr login --name acrconsultxdev0dbaa65b >/dev/null

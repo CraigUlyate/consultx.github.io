@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
 import Script from "next/script";
 import {
@@ -25,14 +25,16 @@ import {
   calculateQuoteTotal,
   SERVICE_CATEGORIES,
 } from "@/lib/rates-schedule";
+import { fetchHandoffSession } from "@/lib/handoff-client";
 
 interface UniversalOnboardingWizardProps {
   initialServiceIds?: string[];
+  handoffId?: string;
 }
 
 const STEPS = ["Services & Scope", "Company Details", "Documents & Contact", "Payment & Mandate"];
 
-export function UniversalOnboardingWizard({ initialServiceIds = [] }: UniversalOnboardingWizardProps) {
+export function UniversalOnboardingWizard({ initialServiceIds = [], handoffId }: UniversalOnboardingWizardProps) {
   const [currentStep, setCurrentStep] = useState(0);
 
   // Step 0: Selected Services
@@ -43,13 +45,36 @@ export function UniversalOnboardingWizard({ initialServiceIds = [] }: UniversalO
 
   // Step 1: Company Details
   const [companyForm, setCompanyForm] = useState({
-    name: "Acme Industrial Holdings (Pty) Ltd",
+    name: "",
     entityType: "company",
-    regNumber: "2023/589214/07",
-    taxNumber: "9482103984",
-    vatNumber: "4920194823",
+    regNumber: "",
+    taxNumber: "",
+    vatNumber: "",
     financialYearEnd: "February",
   });
+
+  // Prefill facts from server-side handoff reference if provided
+  useEffect(() => {
+    if (!handoffId) return;
+    let isCancelled = false;
+
+    fetchHandoffSession(handoffId).then((session) => {
+      if (isCancelled || !session || !session.facts) return;
+      const f = session.facts as Record<string, string>;
+      setCompanyForm((prev) => ({
+        ...prev,
+        name: f.company_name || f.company_identity || prev.name,
+        regNumber: f.registration_number || prev.regNumber,
+        financialYearEnd: f.financial_year_end || prev.financialYearEnd,
+        vatNumber: f.vat_number || prev.vatNumber,
+        taxNumber: f.tax_number || prev.taxNumber,
+      }));
+    });
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [handoffId]);
 
   // Step 2: Contact & Documents
   const [contactForm, setContactForm] = useState({
@@ -72,7 +97,8 @@ export function UniversalOnboardingWizard({ initialServiceIds = [] }: UniversalO
   const [jobReference] = useState(() => `CX-2026-${Math.floor(10000 + Math.random() * 90000)}`);
 
   // Calculate pricing
-  const quote = useMemo(() => calculateQuoteTotal(selectedServiceIds), [selectedServiceIds]);
+  const [payrollHeadcount, setPayrollHeadcount] = useState(10);
+  const quote = useMemo(() => calculateQuoteTotal(selectedServiceIds, payrollHeadcount), [selectedServiceIds, payrollHeadcount]);
 
   // Aggregate required documents for all selected services
   const requiredDocuments = useMemo(() => {
@@ -375,6 +401,21 @@ export function UniversalOnboardingWizard({ initialServiceIds = [] }: UniversalO
             <p className="mt-3 text-sm text-consultx-charcoal">
               Choose the statutory, compliance, or accounting services you require. Prices reflect ConsultX’s 2026 rate card with complete transparency.
             </p>
+
+            {selectedServiceIds.includes("payroll_monthly") && (
+              <label className="mt-4 block max-w-sm text-xs font-semibold text-gray-700">
+                Monthly payroll headcount
+                <input
+                  type="number"
+                  min={0}
+                  step={1}
+                  value={payrollHeadcount}
+                  onChange={(e) => setPayrollHeadcount(Math.max(0, Number(e.target.value) || 0))}
+                  className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 font-normal"
+                />
+                <span className="mt-1 block font-normal text-gray-500">R900/month covers up to 10 employees; R75/month applies from employee 11.</span>
+              </label>
+            )}
 
             <div className="mt-6 space-y-6">
               {(Object.entries(SERVICE_CATEGORIES) as [string, string][]).map(([catKey, catLabel]) => {

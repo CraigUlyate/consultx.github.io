@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Mail, Phone, MessageCircle } from "lucide-react";
 import { ConsultXLogo } from "@/components/ConsultXLogo";
+import { BusinessAddress } from "@/components/BusinessAddress";
 
 const navigate = [
   { label: "Home", href: "/" },
@@ -8,6 +9,7 @@ const navigate = [
   { label: "Services", href: "/services/" },
   { label: "Products", href: "/products/" },
   { label: "Blog", href: "/blog/" },
+  { label: "FAQs", href: "/faqs/" },
   { label: "Contact", href: "/contact/" },
 ];
 
@@ -41,6 +43,7 @@ export function SiteFooter() {
         <div>
           <h3 className="text-base font-semibold">Contact</h3>
           <div className="mt-4 space-y-3 text-sm text-gray-300">
+            <BusinessAddress />
             <a href="tel:+27115160210" className="flex items-center gap-3 hover:text-white">
               <Phone className="h-4 w-4 text-consultx-green" />
               (011) 516 0210

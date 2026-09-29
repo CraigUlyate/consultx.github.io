@@ -1,0 +1,16 @@
+{
+  "Name": "ConsultX CIPC Notification Email Sender",
+  "IsCustom": true,
+  "Description": "Allows the CIPC scheduler identity to authenticate to the one ConsultX Communication Service and submit notification email. It has no permissions outside that service.",
+  "Actions": [
+    "Microsoft.Communication/CommunicationServices/Read",
+    "Microsoft.Communication/CommunicationServices/Write",
+    "Microsoft.Communication/EmailServices/write"
+  ],
+  "NotActions": [],
+  "DataActions": [],
+  "NotDataActions": [],
+  "AssignableScopes": [
+    "/subscriptions/0dbaa65b-80fe-4435-ba06-60e1253eb5f5"
+  ]
+}

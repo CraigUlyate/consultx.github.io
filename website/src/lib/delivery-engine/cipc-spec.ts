@@ -121,7 +121,7 @@ export const CIPC_DELIVERY_SPEC: ServiceDeliverySpec = {
       description: "Client verifies company details, anniversary date, and declares gross annual turnover.",
       actor: "client",
       inputsRequired: ["CIPC Registration Number", "Financial Year-End Turnover", "Late Filing Status"],
-      actionDescription: "Platform matches company records, calculates exact CIPC fee tier, and adds ConsultX fixed professional fee (R850).",
+      actionDescription: "Platform matches company records, calculates exact CIPC statutory fee tier, and adds the ConsultX administration fee of R425. Statutory charges and penalties are at cost.",
       deliverablesGenerated: ["Statutory Fee Assessment Card", "Pro-Forma Invoice"],
       estimatedDurationHours: 1,
     },

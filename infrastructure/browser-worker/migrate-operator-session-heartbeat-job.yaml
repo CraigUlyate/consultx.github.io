@@ -1,0 +1,34 @@
+name: job-consultx-migrate-004-dev
+location: southafricanorth
+identity:
+  type: UserAssigned
+  userAssignedIdentities:
+    /subscriptions/0dbaa65b-80fe-4435-ba06-60e1253eb5f5/resourcegroups/rg-consultx-dev/providers/Microsoft.ManagedIdentity/userAssignedIdentities/id-consultx-portal-dev: {}
+properties:
+  environmentId: /subscriptions/0dbaa65b-80fe-4435-ba06-60e1253eb5f5/resourceGroups/rg-consultx-dev/providers/Microsoft.App/managedEnvironments/cae-consultx-dev
+  configuration:
+    triggerType: Manual
+    replicaTimeout: 600
+    replicaRetryLimit: 0
+    manualTriggerConfig:
+      parallelism: 1
+      replicaCompletionCount: 1
+    registries:
+      - server: acrconsultxdev0dbaa65b.azurecr.io
+        identity: /subscriptions/0dbaa65b-80fe-4435-ba06-60e1253eb5f5/resourcegroups/rg-consultx-dev/providers/Microsoft.ManagedIdentity/userAssignedIdentities/id-consultx-portal-dev
+    secrets:
+      - name: portal-database-url
+        keyVaultUrl: https://kv-consultx-dev-0dbaa65b.vault.azure.net/secrets/portal-database-url
+        identity: /subscriptions/0dbaa65b-80fe-4435-ba06-60e1253eb5f5/resourcegroups/rg-consultx-dev/providers/Microsoft.ManagedIdentity/userAssignedIdentities/id-consultx-portal-dev
+  template:
+    containers:
+      - name: migrate
+        image: acrconsultxdev0dbaa65b.azurecr.io/portal-server:migrations-004
+        resources:
+          cpu: 0.25
+          memory: 0.5Gi
+        env:
+          - name: DATABASE_URL
+            secretRef: portal-database-url
+          - name: MIGRATION_FILES
+            value: /migrations/004_operator_session_heartbeat.sql

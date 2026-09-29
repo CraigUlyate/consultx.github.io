@@ -88,7 +88,7 @@ export function ValuationBriefCard({ brief, onBookMeeting }: ValuationBriefCardP
       <div className="p-4 bg-gray-50/40">
         <h5 className="text-[11px] font-bold text-gray-700 uppercase tracking-wider flex items-center gap-1.5 mb-2">
           <FileText className="h-3.5 w-3.5 text-amber-700" />
-          Required Documentation Checklist
+          Future intake checklist — do not send documents here
         </h5>
         <ul className="space-y-1 text-xs text-gray-600 pl-1">
           {brief.requiredDocuments.map((doc, idx) => (

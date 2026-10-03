@@ -479,7 +479,7 @@ export async function submitAdvisorLead(
   return {
     success: false,
     confirmationId: "",
-    message: `Thank you ${lead.name}. Our live scheduling backend is currently in offline preview mode. Your brief could not be delivered automatically. Please email Craig directly at craig@consultx.co.za or contact him on WhatsApp at +27 82 818 5760 with your brief details.`,
+    message: `Thank you ${lead.name}. Our live scheduling backend is currently in offline preview mode. Your brief could not be delivered automatically. Please email Craig directly at craig@consultx.co.za or contact him on WhatsApp at +27 81 753 6198 with your brief details.`,
   };
 }
 

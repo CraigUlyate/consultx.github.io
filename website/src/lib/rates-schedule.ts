@@ -23,10 +23,10 @@ export const RATES_SCHEDULE_2026: ServiceItem[] = [
     id: "afs_company",
     name: "Company (Pty Ltd) Annual Financial Statements & Tax Return",
     category: "financial_statements",
-    basePriceZar: 9900,
-    priceFormatted: "From R9,900",
+    basePriceZar: 4500,
+    priceFormatted: "From R4,500 – R9,900",
     billingType: "once_off",
-    description: "Compilation of Annual Financial Statements (AFS) for private companies and submission of IT14 corporate tax return.",
+    description: "Compilation of Annual Financial Statements (AFS) and IT14 corporate tax return. Scaled by PI Score (from R4,500 for new startups up to R9,900 benchmark for R10m turnover / 10 staff). Available as an amortized monthly retainer over months to financial year-end.",
     requiredDocuments: [
       "Latest signed Trial Balance or detailed general ledger",
       "Prior year signed Annual Financial Statements",

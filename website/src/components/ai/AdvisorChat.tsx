@@ -303,7 +303,7 @@ export function AdvisorChat({
       setBookingSubmitted({
         success: false,
         confirmationId: "",
-        message: "Failed to connect to the scheduling backend. Please email Craig directly at craig@consultx.co.za or via WhatsApp at +27 82 818 5760.",
+        message: "Failed to connect to the scheduling backend. Please email Craig directly at craig@consultx.co.za or via WhatsApp at +27 81 753 6198.",
       });
     } finally {
       setIsSubmittingLead(false);
@@ -599,7 +599,7 @@ export function AdvisorChat({
                     </p>
                     <div className="mt-4 flex flex-col gap-2">
                       <a
-                        href={`https://wa.me/27828185760?text=${encodeURIComponent(`Hi Craig, I've submitted a consultation request via ConsultX (Ref: ${bookingSubmitted.confirmationId}). Looking forward to connecting!`)}`}
+                        href={`https://wa.me/27817536198?text=${encodeURIComponent(`Hi Craig, I've submitted a consultation request via ConsultX (Ref: ${bookingSubmitted.confirmationId}). Looking forward to connecting!`)}`}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-[#25D366] px-4 py-2.5 text-xs font-bold text-white hover:bg-[#20BA5C] transition-all shadow-xs"
@@ -619,12 +619,12 @@ export function AdvisorChat({
                     </p>
                     <div className="mt-4 flex flex-col gap-2">
                       <a
-                        href={`https://wa.me/27828185760?text=${encodeURIComponent(`Hi Craig, I would like to schedule a consultation with ConsultX.\n\nName: ${bookingForm.name}\nEmail: ${bookingForm.email}\nPhone: ${bookingForm.phone}\nCompany: ${bookingForm.company}\nNotes: ${bookingForm.notes || "None"}`)}`}
+                        href={`https://wa.me/27817536198?text=${encodeURIComponent(`Hi Craig, I would like to schedule a consultation with ConsultX.\n\nName: ${bookingForm.name}\nEmail: ${bookingForm.email}\nPhone: ${bookingForm.phone}\nCompany: ${bookingForm.company}\nNotes: ${bookingForm.notes || "None"}`)}`}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-[#25D366] px-4 py-2.5 text-xs font-bold text-white hover:bg-[#20BA5C] transition-all shadow-xs"
                       >
-                        <PhoneCall className="h-4 w-4" /> WhatsApp Craig Directly (+27 82 818 5760)
+                        <PhoneCall className="h-4 w-4" /> WhatsApp Craig Directly (+27 81 753 6198)
                       </a>
                       <a
                         href={`mailto:craig@consultx.co.za?subject=${encodeURIComponent(`ConsultX Advisory Request - ${bookingForm.name}`)}&body=${encodeURIComponent(`Name: ${bookingForm.name}\nEmail: ${bookingForm.email}\nPhone: ${bookingForm.phone}\nCompany: ${bookingForm.company}\nNotes: ${bookingForm.notes}`)}`}

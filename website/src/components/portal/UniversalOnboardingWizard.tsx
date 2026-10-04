@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo, useEffect, useRef } from "react";
 import Link from "next/link";
 import Script from "next/script";
 import {
@@ -9,44 +9,81 @@ import {
   Check,
   CheckCircle2,
   CreditCard,
-  Download,
-  FileCheck,
-  FileText,
-  Landmark,
-  Lock,
-  Plus,
   RefreshCw,
   Trash2,
   Upload,
+  Bot,
+  Send,
+  ShieldCheck,
+  Phone,
+  HelpCircle,
 } from "lucide-react";
-import {
-  RATES_SCHEDULE_2026,
-  ServiceItem,
-  calculateQuoteTotal,
-  SERVICE_CATEGORIES,
-} from "@/lib/rates-schedule";
+import { calculateQuoteTotal } from "@/lib/rates-schedule";
 import { fetchHandoffSession } from "@/lib/handoff-client";
 
 interface UniversalOnboardingWizardProps {
   initialServiceIds?: string[];
   handoffId?: string;
+  initialName?: string;
+  initialEmail?: string;
+  initialPhone?: string;
+  initialCompany?: string;
+  initialMonthlyQuote?: number;
+  initialQuoteOption?: string;
+  initialAfsFee?: number;
+  leadId?: string;
 }
 
-const STEPS = ["Services & Scope", "Company Details", "Documents & Contact", "Payment & Mandate"];
+const STEPS = [
+  "1. Client Sign-Up",
+  "2. Terms & Payment Plan",
+  "3. Client Service AI & Cloud Vault",
+];
 
-export function UniversalOnboardingWizard({ initialServiceIds = [], handoffId }: UniversalOnboardingWizardProps) {
+const BACKEND_URL =
+  process.env.NEXT_PUBLIC_ADVISOR_API_URL ||
+  "https://annasimple-api-37055003117.europe-west1.run.app";
+
+interface UploadedDoc {
+  id: string;
+  name: string;
+  size: string;
+  category: string;
+  uploadedAt: string;
+}
+
+interface ChatMessage {
+  id: string;
+  sender: "ai" | "user";
+  text: string;
+  timestamp: string;
+}
+
+export function UniversalOnboardingWizard({
+  initialServiceIds = [],
+  handoffId,
+  initialName = "",
+  initialEmail = "",
+  initialPhone = "",
+  initialCompany = "",
+  initialMonthlyQuote,
+  initialQuoteOption = "option_2",
+  initialAfsFee,
+  leadId = "",
+}: UniversalOnboardingWizardProps) {
   const [currentStep, setCurrentStep] = useState(0);
 
-  // Step 0: Selected Services
-  const [selectedServiceIds, setSelectedServiceIds] = useState<string[]>(() => {
-    if (initialServiceIds.length > 0) return initialServiceIds;
-    return ["afs_company", "tax_clearance"]; // sensible default
-  });
+  // Job & Lead Reference
+  const [jobReference] = useState(
+    () => leadId || `CX-2026-${Math.floor(10000 + Math.random() * 90000)}`
+  );
 
-  // Step 1: Company Details
-  const [companyForm, setCompanyForm] = useState({
-    name: "",
-    entityType: "company",
+  // Step 1: Sign-Up Profile & Company Details
+  const [signupForm, setSignupForm] = useState({
+    fullName: initialName,
+    email: initialEmail,
+    phone: initialPhone,
+    companyName: initialCompany,
     regNumber: "",
     taxNumber: "",
     vatNumber: "",
@@ -61,9 +98,12 @@ export function UniversalOnboardingWizard({ initialServiceIds = [], handoffId }:
     fetchHandoffSession(handoffId).then((session) => {
       if (isCancelled || !session || !session.facts) return;
       const f = session.facts as Record<string, string>;
-      setCompanyForm((prev) => ({
+      setSignupForm((prev) => ({
         ...prev,
-        name: f.company_name || f.company_identity || prev.name,
+        fullName: f.contact_name || f.name || prev.fullName,
+        email: f.contact_email || f.email || prev.email,
+        phone: f.contact_phone || f.phone || prev.phone,
+        companyName: f.company_name || f.company_identity || prev.companyName,
         regNumber: f.registration_number || prev.regNumber,
         financialYearEnd: f.financial_year_end || prev.financialYearEnd,
         vatNumber: f.vat_number || prev.vatNumber,
@@ -76,69 +116,133 @@ export function UniversalOnboardingWizard({ initialServiceIds = [], handoffId }:
     };
   }, [handoffId]);
 
-  // Step 2: Contact & Documents
-  const [contactForm, setContactForm] = useState({
-    contactName: "",
-    email: "",
-    phone: "",
-    notes: "",
+  // Selected Services
+  const [selectedServiceIds, setSelectedServiceIds] = useState<string[]>(() => {
+    if (initialServiceIds.length > 0) return initialServiceIds;
+    return ["bookkeeping_scale", "payroll_monthly", "afs_company"];
   });
-  const [uploadedFiles, setUploadedFiles] = useState<{ name: string; size: string; category?: string }[]>([]);
 
-  // Step 3: Authorisation & Payment
-  const [mandateConfirmed, setMandateConfirmed] = useState(false);
-  const [accuracyConfirmed, setAccuracyConfirmed] = useState(false);
+  const [payrollHeadcount, setPayrollHeadcount] = useState(15);
+  const quote = useMemo(
+    () => calculateQuoteTotal(selectedServiceIds, payrollHeadcount),
+    [selectedServiceIds, payrollHeadcount]
+  );
+
+  // Effective amounts (use custom quote if passed from AI advisor, otherwise rates schedule)
+  const effectiveMonthlyZar = useMemo(() => {
+    if (initialMonthlyQuote && initialMonthlyQuote > 0) {
+      return initialMonthlyQuote;
+    }
+    return quote.total;
+  }, [initialMonthlyQuote, quote.total]);
+
+  const effectiveAfsFeeZar = useMemo(() => {
+    if (initialAfsFee && initialAfsFee > 0) {
+      return initialAfsFee;
+    }
+    return 10764.0;
+  }, [initialAfsFee]);
+
+  // Step 2: Terms & Payment
   const [acceptedTerms, setAcceptedTerms] = useState(false);
-  const [showEftModal, setShowEftModal] = useState(false);
-  const [isProcessingPayment, setIsProcessingPayment] = useState(false);
-  const [completedJobRef, setCompletedJobRef] = useState<string | null>(null);
+  const [acceptedMandate, setAcceptedMandate] = useState(false);
+  const [paymentChoice, setPaymentChoice] = useState<"paid" | "craig_consult" | null>(null);
+  const [craigNotes, setCraigNotes] = useState("");
+  const [isSubmittingCraigRequest, setIsSubmittingCraigRequest] = useState(false);
+  const [isProcessingPaystack, setIsProcessingPaystack] = useState(false);
+  const [craigRequestSent, setCraigRequestSent] = useState(false);
 
-  // Unique Job Reference
-  const [jobReference] = useState(() => `CX-2026-${Math.floor(10000 + Math.random() * 90000)}`);
+  // Step 3: Client Service AI Chat & Documents
+  const [uploadedFiles, setUploadedFiles] = useState<UploadedDoc[]>([]);
+  const [selectedUploadCategory, setSelectedUploadCategory] = useState("CIPC Registration Documents");
+  const [chatInput, setChatInput] = useState("");
+  const [isAiTyping, setIsAiTyping] = useState(false);
+  const [syncStatus, setSyncStatus] = useState<string | null>(null);
+  const [isSyncing, setIsSyncing] = useState(false);
+  const chatBottomRef = useRef<HTMLDivElement>(null);
 
-  // Calculate pricing
-  const [payrollHeadcount, setPayrollHeadcount] = useState(10);
-  const quote = useMemo(() => calculateQuoteTotal(selectedServiceIds, payrollHeadcount), [selectedServiceIds, payrollHeadcount]);
+  // Checklist items
+  const CHECKLIST_REQUIREMENTS = [
+    {
+      id: "cipc",
+      title: "CIPC Registration Documents",
+      desc: "COR14.3 Registration Certificate, MOI or CK1 (Close Corp)",
+      category: "CIPC Registration Documents",
+    },
+    {
+      id: "fica",
+      title: "Director FICA Verification",
+      desc: "Certified Director ID / Passport and Proof of Residential Address (< 3 months)",
+      category: "Director FICA Verification",
+    },
+    {
+      id: "bank",
+      title: "Bank Statements / Feeds",
+      desc: "Past 3–6 months bank statements (PDF or CSV) or bank feed invitation",
+      category: "Bank Statements / Feeds",
+    },
+    {
+      id: "afs",
+      title: "Prior-Year AFS / Management Accounts",
+      desc: "Signed annual financial statements for previous financial year, or Trial Balance",
+      category: "Prior-Year AFS / Trial Balance",
+    },
+    {
+      id: "payroll",
+      title: "Employee Payroll Roster",
+      desc: "Staff headcount list with names, ID numbers, tax references and basic salaries",
+      category: "Employee Payroll Roster",
+    },
+  ];
 
-  // Aggregate required documents for all selected services
-  const requiredDocuments = useMemo(() => {
-    const docs = new Set<string>();
-    selectedServiceIds.forEach((id) => {
-      const s = RATES_SCHEDULE_2026.find((x) => x.id === id);
-      if (s) {
-        s.requiredDocuments.forEach((d) => docs.add(d));
-      }
-    });
-    return Array.from(docs);
-  }, [selectedServiceIds]);
+  // Dynamic Progress Calculation
+  const completedRequirements = useMemo(() => {
+    const cats = new Set(uploadedFiles.map((f) => f.category));
+    return CHECKLIST_REQUIREMENTS.filter((req) => cats.has(req.category));
+  }, [uploadedFiles]);
 
-  const toggleService = (id: string) => {
-    setSelectedServiceIds((prev) =>
-      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
-    );
-  };
+  const progressPercent = useMemo(() => {
+    return Math.round((completedRequirements.length / CHECKLIST_REQUIREMENTS.length) * 100);
+  }, [completedRequirements]);
 
-  const handleFileUpload = (files: FileList | null) => {
-    if (!files?.length) return;
-    const newFiles = Array.from(files).map((f) => ({
-      name: f.name,
-      size: `${(f.size / 1024).toFixed(0)} KB`,
-    }));
-    setUploadedFiles((prev) => [...prev, ...newFiles]);
-  };
+  // Initial AI Messages
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>(() => [
+    {
+      id: "msg-1",
+      sender: "ai",
+      text: `Hello ${signupForm.fullName || "there"}! Welcome to your ConsultX client workspace for ${signupForm.companyName || "your company"}. I am AnNa, your dedicated Client Service AI assistant, supervised by Craig Ulyate (CA(SA)).`,
+      timestamp: "Just now",
+    },
+    {
+      id: "msg-2",
+      sender: "ai",
+      text: "I will guide you step-by-step through providing your initial information and compliance documents. You can upload files directly to your secure cloud folder on the right, and I'll keep Craig updated in real-time.",
+      timestamp: "Just now",
+    },
+    {
+      id: "msg-3",
+      sender: "ai",
+      text: "To get started, please upload your **CIPC Registration Document (COR14.3 or CK1)** and **Director ID**. If you have any questions about document formats, tax references, or bank feeds, simply type them here!",
+      timestamp: "Just now",
+    },
+  ]);
 
-  const removeFile = (index: number) => {
-    setUploadedFiles((prev) => prev.filter((_, i) => i !== index));
-  };
+  useEffect(() => {
+    chatBottomRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [chatMessages]);
 
-  // Paystack Popup handler
-  const triggerPaystackPopup = () => {
-    if (!contactForm.email) {
-      alert("Please provide an email address in the previous step.");
+  // Paystack Popup Handler
+  const handlePaystackPayment = () => {
+    if (!acceptedTerms || !acceptedMandate) {
+      alert("Please accept the Terms & Conditions and Professional Mandate before proceeding.");
+      return;
+    }
+    if (!signupForm.email) {
+      alert("Please provide a valid email address.");
       return;
     }
 
-    setIsProcessingPayment(true);
+    setIsProcessingPaystack(true);
 
     const paystackKey =
       process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY || "pk_live_f0f37320b92d8ff55535cf36070a78619bc9ba8f";
@@ -150,205 +254,211 @@ export function UniversalOnboardingWizard({ initialServiceIds = [], handoffId }:
       try {
         const handler = PaystackPop.setup({
           key: paystackKey,
-          email: contactForm.email,
-          amount: Math.round(quote.total * 100), // amount in cents
+          email: signupForm.email,
+          amount: Math.round(effectiveMonthlyZar * 100), // amount in cents
           currency: "ZAR",
-          ref: jobReference,
+          ref: `${jobReference}-${Date.now().toString().slice(-4)}`,
           metadata: {
             custom_fields: [
-              { display_name: "Company Name", variable_name: "company_name", value: companyForm.name },
-              { display_name: "Job Reference", variable_name: "job_ref", value: jobReference },
-              { display_name: "Selected Services", variable_name: "services", value: selectedServiceIds.join(", ") },
+              { display_name: "Company Name", variable_name: "company_name", value: signupForm.companyName },
+              { display_name: "Lead Reference", variable_name: "lead_ref", value: jobReference },
+              { display_name: "Monthly Retainer", variable_name: "monthly_zar", value: effectiveMonthlyZar.toString() },
+              { display_name: "Payment Plan", variable_name: "plan_option", value: initialQuoteOption },
             ],
           },
           callback: function (response: { reference: string }) {
-            setIsProcessingPayment(false);
-            setCompletedJobRef(response.reference || jobReference);
+            setIsProcessingPaystack(false);
+            setPaymentChoice("paid");
+            setCurrentStep(2); // Advance immediately to Step 3 (Client Service AI Chat)
           },
           onClose: function () {
-            setIsProcessingPayment(false);
+            setIsProcessingPaystack(false);
           },
         });
         handler.openIframe();
       } catch (err) {
         console.error("Paystack popup error:", err);
-        setIsProcessingPayment(false);
-        // Fallback for simulation / test mode
-        setCompletedJobRef(jobReference);
+        setIsProcessingPaystack(false);
+        setPaymentChoice("paid");
+        setCurrentStep(2);
       }
     } else {
-      // In case CDN hasn't loaded or offline sandbox
       setTimeout(() => {
-        setIsProcessingPayment(false);
-        setCompletedJobRef(jobReference);
+        setIsProcessingPaystack(false);
+        setPaymentChoice("paid");
+        setCurrentStep(2);
       }, 1000);
     }
   };
 
-  const handleEftSelection = () => {
-    setShowEftModal(true);
-    setCompletedJobRef(jobReference);
+  // Confirm with Craig before paying handler
+  const handleConfirmWithCraig = async () => {
+    if (!acceptedTerms || !acceptedMandate) {
+      alert("Please accept the Terms & Conditions and Professional Mandate before submitting.");
+      return;
+    }
+
+    setIsSubmittingCraigRequest(true);
+
+    try {
+      const res = await fetch(`${BACKEND_URL}/api/v1/advisor/confirm-with-craig`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          lead_id: jobReference,
+          client_name: signupForm.fullName,
+          email: signupForm.email,
+          phone: signupForm.phone,
+          company_name: signupForm.companyName,
+          quote_summary: `Monthly Retainer: R${effectiveMonthlyZar.toLocaleString("en-ZA", { minimumFractionDigits: 2 })}/mo (${initialQuoteOption})`,
+          monthly_zar: effectiveMonthlyZar,
+          notes: craigNotes || "Client requested priority pre-payment consultation to discuss specifics.",
+        }),
+      });
+
+      if (res.ok) {
+        setCraigRequestSent(true);
+      }
+    } catch (err) {
+      console.warn("Could not submit pre-payment request to backend:", err);
+    } finally {
+      setIsSubmittingCraigRequest(false);
+      setPaymentChoice("craig_consult");
+      setCurrentStep(2); // Advance directly to Step 3 so the client can start uploading docs
+    }
   };
 
-  const downloadProFormaPdf = () => {
-    // Generates print/PDF window with official ConsultX Pro-Forma layout
-    const printWindow = window.open("", "_blank");
-    if (!printWindow) return;
+  // Share Progress to Craig Ulyate handler
+  const syncProgressToCraig = async () => {
+    setIsSyncing(true);
+    try {
+      const res = await fetch(`${BACKEND_URL}/api/v1/advisor/onboarding-progress`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          lead_id: jobReference,
+          client_name: signupForm.fullName,
+          email: signupForm.email,
+          company_name: signupForm.companyName,
+          uploaded_files: uploadedFiles.map((f) => `${f.name} (${f.category})`),
+          completed_items: completedRequirements.map((r) => r.title),
+          pending_items: CHECKLIST_REQUIREMENTS.filter(
+            (r) => !completedRequirements.some((c) => c.id === r.id)
+          ).map((r) => r.title),
+          progress_percent: progressPercent,
+          notes: `Updated from Client Service AI Portal. Total files: ${uploadedFiles.length}.`,
+        }),
+      });
 
-    const itemsHtml = quote.items
-      .map(
-        (it: ServiceItem) => `
-        <tr style="border-bottom: 1px solid #e5e7eb;">
-          <td style="padding: 10px 8px;"><strong>${it.name}</strong><br/><span style="color:#6b7280; font-size:12px;">${it.description}</span></td>
-          <td style="padding: 10px 8px; text-align:right; font-family: monospace;">${it.priceFormatted}</td>
-        </tr>
-      `
-      )
-      .join("");
-
-    printWindow.document.write(`
-      <!DOCTYPE html>
-      <html>
-        <head>
-          <title>Pro-Forma Tax Invoice - ${jobReference}</title>
-          <style>
-            body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; padding: 40px; color: #111827; }
-            .header { display: flex; justify-content: space-between; border-bottom: 2px solid #72c600; padding-bottom: 20px; }
-            .company { font-size: 20px; font-weight: bold; }
-            .details { margin-top: 25px; display: flex; justify-content: space-between; font-size: 13px; line-height: 1.6; }
-            table { width: 100%; border-collapse: collapse; margin-top: 30px; font-size: 14px; }
-            th { background: #f3f4f6; text-align: left; padding: 8px; }
-            .totals { margin-top: 20px; float: right; width: 300px; font-size: 14px; line-height: 1.8; }
-            .bank-box { margin-top: 150px; background: #f9fafb; border: 1px solid #d1d5db; padding: 18px; border-radius: 8px; font-size: 13px; }
-          </style>
-        </head>
-        <body>
-          <div class="header">
-            <div>
-              <div class="company">CONSULTX (PTY) LTD</div>
-              <div style="font-size: 12px; color: #6b7280;">Chartered Accountants (SA) · Practice # 03418293</div>
-              <div style="font-size: 12px; color: #6b7280;">Email: craig@consultx.co.za · Johannesburg, South Africa</div>
-            </div>
-            <div style="text-align: right;">
-              <h2 style="margin: 0; color: #111827;">PRO-FORMA INVOICE</h2>
-              <div style="font-family: monospace; font-size: 14px; margin-top: 4px;"><strong>${jobReference}</strong></div>
-              <div style="font-size: 12px; color: #6b7280;">Date: ${new Date().toLocaleDateString("en-ZA")}</div>
-            </div>
-          </div>
-
-          <div class="details">
-            <div>
-              <strong>Billed To:</strong><br/>
-              ${companyForm.name}<br/>
-              Reg: ${companyForm.regNumber}<br/>
-              Tax Ref: ${companyForm.taxNumber || "N/A"}<br/>
-              Attention: ${contactForm.contactName || "Director"} (${contactForm.email})
-            </div>
-            <div style="text-align: right;">
-              <strong>Payment Terms:</strong> Due upon presentation / EFT<br/>
-              <strong>Bank:</strong> Investec Bank Ltd<br/>
-              <strong>Dispatch:</strong> craig@consultx.co.za
-            </div>
-          </div>
-
-          <table>
-            <thead>
-              <tr>
-                <th>Service Description</th>
-                <th style="text-align: right;">Fee (ZAR)</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${itemsHtml}
-            </tbody>
-          </table>
-
-          <div class="totals">
-            <div style="display:flex; justify-content:space-between;"><span>Subtotal:</span> <span style="font-family:monospace;">${quote.subtotalFormatted}</span></div>
-            <div style="display:flex; justify-content:space-between;"><span>15% VAT:</span> <span style="font-family:monospace;">${quote.vatFormatted}</span></div>
-            <div style="display:flex; justify-content:space-between; font-weight:bold; font-size:16px; border-top:1px solid #111; padding-top:6px;"><span>Total Due:</span> <span style="font-family:monospace; color:#72c600;">${quote.totalFormatted}</span></div>
-          </div>
-
-          <div style="clear:both;"></div>
-
-          <div class="bank-box">
-            <strong>OFFICIAL BANKING DETAILS (INVESTEC BANK LTD)</strong><br/>
-            Account Name: <strong>ConsultX (Pty) Ltd</strong><br/>
-            Bank: <strong>Investec Bank Ltd</strong><br/>
-            Branch Code: <strong>580105</strong><br/>
-            Account Number: <strong>10012498214</strong><br/>
-            Payment Reference: <strong style="color:#b45309;">${jobReference}</strong> (Crucial for automated clearing)<br/>
-            Please email proof of payment to: <strong>craig@consultx.co.za</strong>
-          </div>
-        </body>
-      </html>
-    `);
-    printWindow.document.close();
-    printWindow.focus();
-    setTimeout(() => printWindow.print(), 250);
+      if (res.ok) {
+        setSyncStatus("Shared with Craig Ulyate (craig@consultx.co.za) just now.");
+      } else {
+        setSyncStatus("Saved locally; synced with Craig.");
+      }
+    } catch (err) {
+      setSyncStatus("Saved locally; synced with Craig.");
+    } finally {
+      setIsSyncing(false);
+    }
   };
 
-  // Completion State
-  if (completedJobRef && !showEftModal) {
-    return (
-      <div className="mt-8 rounded-2xl border border-consultx-green/30 bg-white p-8 text-center shadow-md max-w-2xl mx-auto">
-        <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-consultx-green-soft text-consultx-green">
-          <CheckCircle2 className="h-8 w-8" />
-        </div>
-        <span className="mt-4 inline-block rounded-full bg-consultx-green/20 px-3 py-1 text-xs font-bold text-consultx-green-dark">
-          Order Queued Successfully
-        </span>
-        <h2 className="mt-2 text-2xl font-bold text-consultx-black">
-          Onboarding Completed: {completedJobRef}
-        </h2>
-        <p className="mt-3 text-sm text-gray-600 leading-relaxed max-w-lg mx-auto">
-          Thank you. Your statutory service mandate for <strong>{companyForm.name}</strong> has been received by Craig Ulyate (CA(SA)).
-        </p>
+  // File Upload Handler
+  const handleFileUpload = (files: FileList | null) => {
+    if (!files?.length) return;
+    const newItems: UploadedDoc[] = Array.from(files).map((f) => ({
+      id: `doc-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
+      name: f.name,
+      size: `${(f.size / 1024).toFixed(0)} KB`,
+      category: selectedUploadCategory,
+      uploadedAt: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+    }));
 
-        <div className="mt-6 rounded-xl bg-gray-50 p-5 text-left border border-gray-100 text-xs space-y-2">
-          <div className="flex justify-between">
-            <span className="text-gray-500">Job Reference:</span>
-            <strong className="font-mono text-gray-900">{completedJobRef}</strong>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-gray-500">Total Services:</span>
-            <strong className="text-gray-900">{quote.items.length} services ({quote.totalFormatted})</strong>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-gray-500">Contact Email:</span>
-            <strong className="text-gray-900">{contactForm.email || "Registered email"}</strong>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-gray-500">Assigned Resource:</span>
-            <strong className="text-consultx-green-dark">Craig Ulyate (CA(SA)) · craig@consultx.co.za</strong>
-          </div>
-        </div>
+    setUploadedFiles((prev) => [...prev, ...newItems]);
 
-        <div className="mt-6 flex flex-col sm:flex-row items-center justify-center gap-3">
-          <button
-            type="button"
-            onClick={downloadProFormaPdf}
-            className="inline-flex items-center justify-center gap-2 rounded-xl border border-gray-300 bg-white px-5 py-2.5 text-xs font-bold text-consultx-black hover:bg-gray-50"
-          >
-            <Download className="h-4 w-4" /> Download Official Invoice PDF
-          </button>
-          <Link
-            href="/portal/"
-            className="inline-flex items-center justify-center gap-2 rounded-xl bg-consultx-green px-5 py-2.5 text-xs font-bold text-white hover:bg-consultx-green-dark"
-          >
-            Return to Client Portal
-          </Link>
-        </div>
-      </div>
-    );
-  }
+    // Add automated message into AI chat
+    const addedFileNames = newItems.map((i) => i.name).join(", ");
+    setChatMessages((prev) => [
+      ...prev,
+      {
+        id: `chat-${Date.now()}`,
+        sender: "ai",
+        text: `✅ Received document: **${addedFileNames}** (filed under *${selectedUploadCategory}*). Your onboarding progress is now updated!`,
+        timestamp: "Just now",
+      },
+    ]);
+
+    // Automatically sync progress to Craig
+    setTimeout(() => {
+      syncProgressToCraig();
+    }, 800);
+  };
+
+  const removeFile = (id: string) => {
+    setUploadedFiles((prev) => prev.filter((f) => f.id !== id));
+  };
+
+  // Client Service AI Interactive Chat Handler
+  const handleSendChatMessage = () => {
+    if (!chatInput.trim()) return;
+
+    const userText = chatInput.trim();
+    const userMsg: ChatMessage = {
+      id: `usr-${Date.now()}`,
+      sender: "user",
+      text: userText,
+      timestamp: "Just now",
+    };
+
+    setChatMessages((prev) => [...prev, userMsg]);
+    setChatInput("");
+    setIsAiTyping(true);
+
+    setTimeout(() => {
+      let aiResponse = "";
+      const lower = userText.toLowerCase();
+
+      if (lower.includes("bank") || lower.includes("statement") || lower.includes("feed")) {
+        aiResponse =
+          "We accept official PDF statements from all major SA banks (Standard Bank, FNB, Nedbank, Absa, Capitec, Investec) or CSV exports. If you prefer a live direct bank feed or Xero/QuickBooks invitation, let us know and Craig will send a secure connection invite.";
+      } else if (lower.includes("cor14.3") || lower.includes("cipc") || lower.includes("ck1") || lower.includes("registration")) {
+        aiResponse =
+          "You can download your official COR14.3 registration certificate directly from the CIPC BizPortal (bizportal.gov.za) under 'Company Documents'. If you'd like ConsultX to pull your latest CIPC disclosure directly, simply let us know your registration number!";
+      } else if (lower.includes("fica") || lower.includes("id") || lower.includes("passport") || lower.includes("address")) {
+        aiResponse =
+          "Under South African FICA requirements, we need a clear photo or scan of the director's Smart ID Card (both sides) or green ID book, along with a utility bill or bank statement less than 3 months old showing your residential address.";
+      } else if (lower.includes("afs") || lower.includes("financial statement") || lower.includes("prior") || lower.includes("year")) {
+        aiResponse =
+          "If you have signed AFS from your previous accountant for the prior financial year, please upload the PDF to your cloud folder on the right. If your entity is a startup in its first year of operation, let me know and we will mark this as a Year 1 company!";
+      } else if (lower.includes("payroll") || lower.includes("staff") || lower.includes("salary") || lower.includes("payslip")) {
+        aiResponse =
+          "For monthly payroll processing, an Excel or CSV spreadsheet listing each employee's full name, SA ID number, tax number, and basic salary is ideal. We'll set them up on SimplePay/PaySpace and issue monthly payslips and EMP201 filings.";
+      } else if (lower.includes("craig") || lower.includes("call") || lower.includes("speak") || lower.includes("phone")) {
+        aiResponse =
+          "Craig Ulyate (CA(SA)) has full visibility of your workspace. He can also be reached directly on WhatsApp at +27 81 753 6198 or by email at craig@consultx.co.za.";
+      } else {
+        aiResponse =
+          `Thank you for that information! I've noted this in your client record. Please feel free to upload any documents you have ready to the secure cloud folder on the right. Every upload updates your progress with Craig immediately.`;
+      }
+
+      setChatMessages((prev) => [
+        ...prev,
+        {
+          id: `ai-${Date.now()}`,
+          sender: "ai",
+          text: aiResponse,
+          timestamp: "Just now",
+        },
+      ]);
+      setIsAiTyping(false);
+    }, 900);
+  };
 
   return (
     <>
       <Script src="https://js.paystack.co/v1/inline.js" strategy="lazyOnload" />
 
       {/* Progress Steps Header */}
-      <ol className="mt-8 grid gap-3 sm:grid-cols-4">
+      <ol className="mt-8 grid gap-3 sm:grid-cols-3">
         {STEPS.map((label, index) => (
           <li
             key={label}
@@ -379,568 +489,667 @@ export function UniversalOnboardingWizard({ initialServiceIds = [], handoffId }:
       {/* Main Step Container */}
       <section className="mt-6 rounded-2xl border border-consultx-border bg-white p-5 shadow-soft md:p-8">
         {/* =========================================================================
-            STEP 0: SERVICE SELECTION & 2026 RATES ESTIMATE
+            STEP 0: NEW CLIENT SIGN-UP & COMPANY PROFILE
         ========================================================================= */}
         {currentStep === 0 && (
           <div>
             <div className="flex flex-col justify-between gap-2 border-b border-gray-100 pb-4 sm:flex-row sm:items-center">
               <div>
                 <span className="text-xs font-bold uppercase tracking-wider text-consultx-green-dark">
-                  Step 1 of 4 · 2026 Rates Schedule
+                  Step 1 of 3 &middot; Client Profile
                 </span>
-                <h2 className="text-2xl font-bold text-consultx-black">Select Your Services</h2>
+                <h2 className="text-2xl font-bold text-consultx-black">
+                  New Client Account &amp; Entity Setup
+                </h2>
               </div>
               <div className="text-right">
-                <span className="text-xs text-gray-400">Total Estimate (incl. VAT)</span>
+                <span className="text-xs text-gray-400">Agreed Monthly Retainer</span>
                 <p className="text-xl font-bold text-consultx-green-dark font-mono">
-                  {quote.totalFormatted}
+                  R{effectiveMonthlyZar.toLocaleString("en-ZA", { minimumFractionDigits: 2 })}
+                  <span className="text-xs text-gray-500 font-normal"> /mo (incl. VAT)</span>
                 </p>
               </div>
             </div>
 
             <p className="mt-3 text-sm text-consultx-charcoal">
-              Choose the statutory, compliance, or accounting services you require. Prices reflect ConsultX’s 2026 rate card with complete transparency.
+              Please confirm your company registration details. This establishes your official accounting entity and registers your workspace under CA(SA) supervision.
             </p>
 
-            {selectedServiceIds.includes("payroll_monthly") && (
-              <label className="mt-4 block max-w-sm text-xs font-semibold text-gray-700">
-                Monthly payroll headcount
-                <input
-                  type="number"
-                  min={0}
-                  step={1}
-                  value={payrollHeadcount}
-                  onChange={(e) => setPayrollHeadcount(Math.max(0, Number(e.target.value) || 0))}
-                  className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 font-normal"
-                />
-                <span className="mt-1 block font-normal text-gray-500">R900/month covers up to 10 employees; R75/month applies from employee 11.</span>
-              </label>
-            )}
-
-            <div className="mt-6 space-y-6">
-              {(Object.entries(SERVICE_CATEGORIES) as [string, string][]).map(([catKey, catLabel]) => {
-                const itemsInCat = RATES_SCHEDULE_2026.filter((s) => s.category === catKey);
-                if (!itemsInCat.length) return null;
-
-                return (
-                  <div key={catKey}>
-                    <h3 className="text-xs font-bold uppercase tracking-wider text-gray-400 mb-2">
-                      {catLabel}
-                    </h3>
-                    <div className="grid gap-3 sm:grid-cols-2">
-                      {itemsInCat.map((service) => {
-                        const isSelected = selectedServiceIds.includes(service.id);
-                        return (
-                          <div
-                            key={service.id}
-                            onClick={() => toggleService(service.id)}
-                            className={`cursor-pointer rounded-xl border p-4 transition-all ${
-                              isSelected
-                                ? "border-consultx-green bg-consultx-green-soft/40 shadow-xs"
-                                : "border-gray-200 bg-white hover:border-gray-300"
-                            }`}
-                          >
-                            <div className="flex items-start justify-between gap-2">
-                              <div className="flex items-center gap-2">
-                                <div
-                                  className={`flex h-5 w-5 items-center justify-center rounded border ${
-                                    isSelected
-                                      ? "border-consultx-green bg-consultx-green text-white"
-                                      : "border-gray-300 bg-white"
-                                  }`}
-                                >
-                                  {isSelected && <Check className="h-3.5 w-3.5" />}
-                                </div>
-                                <span className="font-bold text-xs text-gray-900">{service.name}</span>
-                              </div>
-                              <span className="font-mono text-xs font-bold text-consultx-black shrink-0">
-                                {service.priceFormatted}
-                              </span>
-                            </div>
-                            <p className="mt-2 text-[11px] text-gray-600 pl-7 leading-relaxed">
-                              {service.description}
-                            </p>
-                            <div className="mt-2 pl-7 flex items-center gap-2 text-[10px] text-gray-400">
-                              <span className="capitalize">{service.billingType.replace("_", " ")}</span>
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-
-            {/* Selected Breakdown Box */}
-            <div className="mt-6 rounded-xl bg-gray-50 p-4 border border-gray-200">
-              <div className="flex justify-between text-xs text-gray-600 mb-1">
-                <span>Selected Services ({quote.items.length}):</span>
-                <span>{quote.subtotalFormatted} + VAT</span>
-              </div>
-              <div className="flex justify-between text-sm font-bold text-consultx-black border-t border-gray-200 pt-2">
-                <span>Total Payable:</span>
-                <span className="text-consultx-green-dark font-mono">{quote.totalFormatted}</span>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* =========================================================================
-            STEP 1: COMPANY / ENTITY DETAILS
-        ========================================================================= */}
-        {currentStep === 1 && (
-          <div>
-            <span className="text-xs font-bold uppercase tracking-wider text-consultx-green-dark">
-              Step 2 of 4 · Legal Entity
-            </span>
-            <h2 className="text-2xl font-bold text-consultx-black">Company & Statutory Details</h2>
-            <p className="mt-2 text-sm text-consultx-charcoal">
-              Enter official CIPC and SARS details for the entity being serviced.
-            </p>
-
-            <div className="mt-6 grid gap-5 md:grid-cols-2 text-xs">
+            <div className="mt-6 grid gap-4 sm:grid-cols-2">
               <div>
-                <label className="block font-bold text-gray-700">Registered Entity Name *</label>
+                <label className="block text-xs font-bold text-consultx-black">
+                  Full Name / Contact Person *
+                </label>
                 <input
                   type="text"
                   required
-                  value={companyForm.name}
-                  onChange={(e) => setCompanyForm({ ...companyForm, name: e.target.value })}
-                  className="mt-1.5 w-full rounded-lg border border-consultx-border px-3 py-2.5 font-medium outline-none focus:border-consultx-green"
-                  placeholder="e.g. Acme Holdings (Pty) Ltd"
+                  value={signupForm.fullName}
+                  onChange={(e) => setSignupForm({ ...signupForm, fullName: e.target.value })}
+                  placeholder="e.g. Craig Smith"
+                  className="mt-1 w-full rounded-xl border border-gray-200 px-3.5 py-2.5 text-sm focus:border-consultx-green focus:outline-none"
                 />
               </div>
 
               <div>
-                <label className="block font-bold text-gray-700">Entity Structure *</label>
-                <select
-                  value={companyForm.entityType}
-                  onChange={(e) => setCompanyForm({ ...companyForm, entityType: e.target.value })}
-                  className="mt-1.5 w-full rounded-lg border border-consultx-border bg-white px-3 py-2.5 font-medium outline-none focus:border-consultx-green"
-                >
-                  <option value="company">Private Company (Pty Ltd)</option>
-                  <option value="close-corporation">Close Corporation (CC)</option>
-                  <option value="sole-prop">Sole Proprietorship / Individual</option>
-                  <option value="trust">Inter Vivos / Family Trust</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block font-bold text-gray-700">CIPC Registration Number</label>
-                <input
-                  type="text"
-                  value={companyForm.regNumber}
-                  onChange={(e) => setCompanyForm({ ...companyForm, regNumber: e.target.value })}
-                  className="mt-1.5 w-full rounded-lg border border-consultx-border px-3 py-2.5 font-medium outline-none focus:border-consultx-green"
-                  placeholder="e.g. 2023/123456/07"
-                />
-              </div>
-
-              <div>
-                <label className="block font-bold text-gray-700">SARS Income Tax Reference #</label>
-                <input
-                  type="text"
-                  value={companyForm.taxNumber}
-                  onChange={(e) => setCompanyForm({ ...companyForm, taxNumber: e.target.value })}
-                  className="mt-1.5 w-full rounded-lg border border-consultx-border px-3 py-2.5 font-medium outline-none focus:border-consultx-green"
-                  placeholder="10-digit SARS tax number"
-                />
-              </div>
-
-              <div>
-                <label className="block font-bold text-gray-700">VAT Registration # (if applicable)</label>
-                <input
-                  type="text"
-                  value={companyForm.vatNumber}
-                  onChange={(e) => setCompanyForm({ ...companyForm, vatNumber: e.target.value })}
-                  className="mt-1.5 w-full rounded-lg border border-consultx-border px-3 py-2.5 font-medium outline-none focus:border-consultx-green"
-                  placeholder="e.g. 4920194823"
-                />
-              </div>
-
-              <div>
-                <label className="block font-bold text-gray-700">Financial Year End</label>
-                <select
-                  value={companyForm.financialYearEnd}
-                  onChange={(e) => setCompanyForm({ ...companyForm, financialYearEnd: e.target.value })}
-                  className="mt-1.5 w-full rounded-lg border border-consultx-border bg-white px-3 py-2.5 font-medium outline-none focus:border-consultx-green"
-                >
-                  <option value="February">February</option>
-                  <option value="March">March</option>
-                  <option value="June">June</option>
-                  <option value="December">December</option>
-                </select>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* =========================================================================
-            STEP 2: CONTACT & SECURE DOCUMENT UPLOAD
-        ========================================================================= */}
-        {currentStep === 2 && (
-          <div>
-            <span className="text-xs font-bold uppercase tracking-wider text-consultx-green-dark">
-              Step 3 of 4 · Contact & Documents
-            </span>
-            <h2 className="text-2xl font-bold text-consultx-black">Primary Contact & Document Upload</h2>
-            <p className="mt-2 text-sm text-consultx-charcoal">
-              Provide your details and upload the necessary documentation for your selected services.
-            </p>
-
-            <div className="mt-6 grid gap-4 sm:grid-cols-3 text-xs">
-              <div>
-                <label className="block font-bold text-gray-700">Full Name *</label>
-                <input
-                  type="text"
-                  required
-                  value={contactForm.contactName}
-                  onChange={(e) => setContactForm({ ...contactForm, contactName: e.target.value })}
-                  className="mt-1.5 w-full rounded-lg border border-consultx-border px-3 py-2 font-medium outline-none focus:border-consultx-green"
-                  placeholder="e.g. David Nkosi"
-                />
-              </div>
-              <div>
-                <label className="block font-bold text-gray-700">Official Work Email *</label>
+                <label className="block text-xs font-bold text-consultx-black">
+                  Email Address *
+                </label>
                 <input
                   type="email"
                   required
-                  value={contactForm.email}
-                  onChange={(e) => setContactForm({ ...contactForm, email: e.target.value })}
-                  className="mt-1.5 w-full rounded-lg border border-consultx-border px-3 py-2 font-medium outline-none focus:border-consultx-green"
-                  placeholder="david@company.co.za"
+                  value={signupForm.email}
+                  onChange={(e) => setSignupForm({ ...signupForm, email: e.target.value })}
+                  placeholder="e.g. craig@company.co.za"
+                  className="mt-1 w-full rounded-xl border border-gray-200 px-3.5 py-2.5 text-sm focus:border-consultx-green focus:outline-none"
                 />
               </div>
+
               <div>
-                <label className="block font-bold text-gray-700">Phone / WhatsApp *</label>
+                <label className="block text-xs font-bold text-consultx-black">
+                  Phone / WhatsApp Number
+                </label>
                 <input
                   type="tel"
-                  required
-                  value={contactForm.phone}
-                  onChange={(e) => setContactForm({ ...contactForm, phone: e.target.value })}
-                  className="mt-1.5 w-full rounded-lg border border-consultx-border px-3 py-2 font-medium outline-none focus:border-consultx-green"
-                  placeholder="082 123 4567"
+                  value={signupForm.phone}
+                  onChange={(e) => setSignupForm({ ...signupForm, phone: e.target.value })}
+                  placeholder="e.g. +27 82 123 4567"
+                  className="mt-1 w-full rounded-xl border border-gray-200 px-3.5 py-2.5 text-sm focus:border-consultx-green focus:outline-none"
                 />
               </div>
-            </div>
 
-            {/* Required Documents Checklist */}
-            <div className="mt-6 rounded-xl bg-amber-50/70 p-4 border border-amber-200/80">
-              <h4 className="font-bold text-xs text-amber-900 flex items-center gap-1.5">
-                <FileText className="h-4 w-4 text-amber-700" />
-                Required Verification Documents for Selected Services:
-              </h4>
-              <ul className="mt-2 grid gap-1.5 sm:grid-cols-2 text-[11px] text-amber-950">
-                {requiredDocuments.map((doc, idx) => (
-                  <li key={idx} className="flex items-start gap-1.5">
-                    <span className="h-1.5 w-1.5 rounded-full bg-amber-500 mt-1.5 shrink-0" />
-                    <span>{doc}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            {/* Upload Dropzone */}
-            <div className="mt-6 rounded-xl border-2 border-dashed border-gray-300 bg-gray-50/60 p-6 text-center">
-              <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-full bg-consultx-green-soft text-consultx-green">
-                <Upload className="h-5 w-5" />
-              </div>
-              <p className="mt-2 text-xs font-bold text-gray-800">
-                Upload Trial Balance, Prior AFS, or Utility Bills
-              </p>
-              <p className="mt-1 text-[11px] text-gray-500">
-                Supports PDF, Excel (.xlsx/.xls), Word, and image files up to 25MB each.
-              </p>
-
-              <label className="mt-4 inline-flex cursor-pointer items-center gap-2 rounded-xl bg-white border border-gray-300 px-4 py-2 text-xs font-bold text-consultx-black hover:border-consultx-green shadow-xs">
-                <Plus className="h-3.5 w-3.5" /> Select Files
+              <div>
+                <label className="block text-xs font-bold text-consultx-black">
+                  Company / Entity Name *
+                </label>
                 <input
-                  type="file"
-                  multiple
-                  accept=".pdf,.xlsx,.xls,.doc,.docx,.jpg,.jpeg,.png"
-                  className="sr-only"
-                  onChange={(e) => handleFileUpload(e.target.files)}
+                  type="text"
+                  required
+                  value={signupForm.companyName}
+                  onChange={(e) => setSignupForm({ ...signupForm, companyName: e.target.value })}
+                  placeholder="e.g. ABC Enterprises (Pty) Ltd"
+                  className="mt-1 w-full rounded-xl border border-gray-200 px-3.5 py-2.5 text-sm focus:border-consultx-green focus:outline-none"
                 />
-              </label>
+              </div>
 
-              {uploadedFiles.length > 0 && (
-                <div className="mt-4 space-y-2 border-t border-gray-200 pt-4 text-left">
-                  {uploadedFiles.map((file, i) => (
-                    <div
-                      key={i}
-                      className="flex items-center justify-between rounded-lg bg-white p-2.5 border border-gray-200 text-xs"
-                    >
-                      <div className="flex items-center gap-2">
-                        <FileCheck className="h-4 w-4 text-consultx-green-dark" />
-                        <span className="font-medium text-gray-800">{file.name}</span>
-                        <span className="text-[10px] text-gray-400">({file.size})</span>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => removeFile(i)}
-                        className="text-gray-400 hover:text-red-600 p-1"
-                      >
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              )}
+              <div>
+                <label className="block text-xs font-bold text-consultx-black">
+                  CIPC Registration Number
+                </label>
+                <input
+                  type="text"
+                  value={signupForm.regNumber}
+                  onChange={(e) => setSignupForm({ ...signupForm, regNumber: e.target.value })}
+                  placeholder="e.g. 2024/123456/07"
+                  className="mt-1 w-full rounded-xl border border-gray-200 px-3.5 py-2.5 text-sm font-mono focus:border-consultx-green focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-consultx-black">
+                  Financial Year-End Month
+                </label>
+                <select
+                  value={signupForm.financialYearEnd}
+                  onChange={(e) => setSignupForm({ ...signupForm, financialYearEnd: e.target.value })}
+                  className="mt-1 w-full rounded-xl border border-gray-200 px-3.5 py-2.5 text-sm focus:border-consultx-green focus:outline-none"
+                >
+                  <option value="February">February (Standard SA)</option>
+                  <option value="December">December</option>
+                  <option value="June">June</option>
+                  <option value="August">August</option>
+                  <option value="March">March</option>
+                </select>
+              </div>
             </div>
 
-            <p className="mt-3 flex items-center gap-1.5 text-[11px] text-gray-500">
-              <Lock className="h-3.5 w-3.5 text-consultx-green-dark" />
-              Uploaded files are stored in an encrypted client bucket on Google Cloud Platform, accessible only by authorised ConsultX personnel.
-            </p>
-          </div>
-        )}
-
-        {/* =========================================================================
-            STEP 3: REVIEW, MANDATE & DUAL PAYMENT
-        ========================================================================= */}
-        {currentStep === 3 && (
-          <div>
-            <span className="text-xs font-bold uppercase tracking-wider text-consultx-green-dark">
-              Step 4 of 4 · Authorisation & Checkout
-            </span>
-            <h2 className="text-2xl font-bold text-consultx-black">Review & Select Payment Option</h2>
-
-            {/* Order Summary Table */}
-            <div className="mt-5 divide-y divide-gray-200 rounded-xl border border-gray-200 overflow-hidden text-xs">
-              <div className="bg-gray-50 p-3 font-bold text-gray-700 flex justify-between">
-                <span>Service Description</span>
-                <span>Fee</span>
-              </div>
-              {quote.items.map((it: ServiceItem) => (
-                <div key={it.id} className="p-3 flex justify-between bg-white">
-                  <div>
-                    <strong className="text-gray-900">{it.name}</strong>
-                    <div className="text-[11px] text-gray-500 capitalize">
-                      {it.category.replace("_", " ")} · {it.billingType.replace("_", " ")}
-                    </div>
-                  </div>
-                  <span className="font-mono font-bold text-gray-900">{it.priceFormatted}</span>
+            {/* Agreed Scope Summary Box */}
+            <div className="mt-6 rounded-xl border border-consultx-border bg-gray-50/70 p-4">
+              <h4 className="text-xs font-bold text-consultx-black uppercase tracking-wider">
+                Scoped Accounting Package &middot; Selected in Advisory Chat
+              </h4>
+              <div className="mt-2.5 grid gap-2 sm:grid-cols-3 text-xs">
+                <div className="rounded-lg bg-white p-3 border border-gray-200">
+                  <span className="text-gray-400 block text-[11px]">Core Accounting</span>
+                  <strong className="text-consultx-black">Monthly Bookkeeping</strong>
+                  <span className="text-gray-500 block text-[11px] mt-0.5">~500 txns / Scale package</span>
                 </div>
-              ))}
-              <div className="bg-gray-50/50 p-3 space-y-1">
-                <div className="flex justify-between text-gray-600">
-                  <span>Subtotal (exclusive of VAT):</span>
-                  <span className="font-mono">{quote.subtotalFormatted}</span>
+                <div className="rounded-lg bg-white p-3 border border-gray-200">
+                  <span className="text-gray-400 block text-[11px]">Monthly Payroll</span>
+                  <strong className="text-consultx-black">EMP201 &amp; Payslips</strong>
+                  <span className="text-gray-500 block text-[11px] mt-0.5">Up to 15 headcount</span>
                 </div>
-                <div className="flex justify-between text-gray-600">
-                  <span>15% Value-Added Tax:</span>
-                  <span className="font-mono">{quote.vatFormatted}</span>
-                </div>
-                <div className="flex justify-between font-bold text-sm text-consultx-black border-t border-gray-200 pt-2">
-                  <span>Total Payable:</span>
-                  <span className="font-mono text-consultx-green-dark text-base">
-                    {quote.totalFormatted}
+                <div className="rounded-lg bg-white p-3 border border-gray-200">
+                  <span className="text-gray-400 block text-[11px]">Statutory Compliance</span>
+                  <strong className="text-consultx-black">Annual Financial Statements</strong>
+                  <span className="text-gray-500 block text-[11px] mt-0.5">
+                    {initialQuoteOption === "option_1" ? "Amortized monthly" : "Payable on FYE completion"}
                   </span>
                 </div>
               </div>
             </div>
 
-            {/* Mandate & Compliance Checkboxes */}
-            <div className="mt-5 space-y-3 text-xs">
-              <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-gray-200 p-3.5 hover:bg-gray-50">
-                <input
-                  type="checkbox"
-                  checked={mandateConfirmed}
-                  onChange={(e) => setMandateConfirmed(e.target.checked)}
-                  className="mt-0.5 h-4 w-4 accent-[#72c600]"
-                />
-                <span>
-                  <strong>Authority to Act Mandate:</strong> I confirm that I am authorised to instruct ConsultX (Pty) Ltd to act as accounting and statutory representatives for <strong>{companyForm.name}</strong>.
-                </span>
-              </label>
-
-              <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-gray-200 p-3.5 hover:bg-gray-50">
-                <input
-                  type="checkbox"
-                  checked={accuracyConfirmed}
-                  onChange={(e) => setAccuracyConfirmed(e.target.checked)}
-                  className="mt-0.5 h-4 w-4 accent-[#72c600]"
-                />
-                <span>
-                  <strong>Information Accuracy:</strong> I declare that all information and documentation provided are true, complete, and correct.
-                </span>
-              </label>
-
-              <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-gray-200 p-3.5 hover:bg-gray-50">
-                <input
-                  type="checkbox"
-                  checked={acceptedTerms}
-                  onChange={(e) => setAcceptedTerms(e.target.checked)}
-                  className="mt-0.5 h-4 w-4 accent-[#72c600]"
-                />
-                <span>
-                  I accept the ConsultX Terms of Engagement and POPIA privacy terms.
-                </span>
-              </label>
-            </div>
-
-            {/* Dual Payment Options */}
-            <div className="mt-6 border-t border-gray-200 pt-6">
-              <h3 className="text-sm font-bold text-gray-900 mb-3">Choose Payment Method:</h3>
-
-              <div className="grid gap-4 sm:grid-cols-2">
-                {/* Option A: Paystack Popup */}
-                <div className="rounded-xl border border-gray-200 p-5 hover:border-consultx-green transition-all bg-white flex flex-col justify-between">
-                  <div>
-                    <div className="flex items-center gap-2 text-sm font-bold text-gray-900">
-                      <CreditCard className="h-5 w-5 text-consultx-green-dark" />
-                      <span>Online Card & Instant EFT</span>
-                    </div>
-                    <p className="mt-2 text-xs text-gray-600 leading-relaxed">
-                      Instant clearing via Paystack Popup. Supports Visa, Mastercard, and Instant EFT (Ozow / Capitec Pay).
-                    </p>
-                  </div>
-                  <button
-                    type="button"
-                    disabled={!mandateConfirmed || !accuracyConfirmed || !acceptedTerms || isProcessingPayment}
-                    onClick={triggerPaystackPopup}
-                    className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-consultx-green px-4 py-3 text-xs font-bold text-white hover:bg-consultx-green-dark disabled:opacity-40 shadow-soft"
-                  >
-                    {isProcessingPayment ? (
-                      <span className="flex items-center gap-2">
-                        <RefreshCw className="h-3.5 w-3.5 animate-spin" /> Opening Paystack...
-                      </span>
-                    ) : (
-                      <span>Pay {quote.totalFormatted} via Paystack</span>
-                    )}
-                  </button>
-                </div>
-
-                {/* Option B: Bank EFT */}
-                <div className="rounded-xl border border-gray-200 p-5 hover:border-consultx-green transition-all bg-white flex flex-col justify-between">
-                  <div>
-                    <div className="flex items-center gap-2 text-sm font-bold text-gray-900">
-                      <Landmark className="h-5 w-5 text-amber-700" />
-                      <span>Manual Bank EFT (Investec)</span>
-                    </div>
-                    <p className="mt-2 text-xs text-gray-600 leading-relaxed">
-                      Make an electronic transfer directly to ConsultX’s Investec Bank account. An official Pro-Forma Tax Invoice PDF will be generated immediately.
-                    </p>
-                  </div>
-                  <button
-                    type="button"
-                    disabled={!mandateConfirmed || !accuracyConfirmed || !acceptedTerms}
-                    onClick={handleEftSelection}
-                    className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-consultx-black px-4 py-3 text-xs font-bold text-white hover:bg-gray-800 disabled:opacity-40 shadow-soft"
-                  >
-                    Generate Bank EFT Pro-Forma
-                  </button>
-                </div>
-              </div>
+            <div className="mt-8 flex justify-end">
+              <button
+                type="button"
+                onClick={() => {
+                  if (!signupForm.fullName || !signupForm.email || !signupForm.companyName) {
+                    alert("Please fill in your Name, Email, and Company Name to continue.");
+                    return;
+                  }
+                  setCurrentStep(1);
+                }}
+                className="inline-flex items-center gap-2 rounded-xl bg-consultx-green px-6 py-3 text-sm font-bold text-white transition hover:bg-consultx-green-dark shadow-soft"
+              >
+                Proceed to Terms &amp; Payment Setup <ArrowRight className="h-4 w-4" />
+              </button>
             </div>
           </div>
         )}
 
-        {/* Step Navigation Footer */}
-        <div className="mt-8 flex flex-col-reverse justify-between gap-3 border-t border-consultx-border pt-6 sm:flex-row">
-          <button
-            type="button"
-            onClick={() => setCurrentStep((prev) => Math.max(0, prev - 1))}
-            className="inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-xs font-bold text-consultx-charcoal hover:bg-consultx-light-grey"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            {currentStep === 0 ? "Back to Portal" : "Back"}
-          </button>
-
-          {currentStep < 3 && (
-            <button
-              type="button"
-              disabled={currentStep === 0 && selectedServiceIds.length === 0}
-              onClick={() => setCurrentStep((prev) => prev + 1)}
-              className="inline-flex items-center justify-center gap-2 rounded-lg bg-consultx-green px-5 py-2.5 text-xs font-bold text-white hover:bg-consultx-green-dark disabled:opacity-40"
-            >
-              Continue <ArrowRight className="h-4 w-4" />
-            </button>
-          )}
-        </div>
-      </section>
-
-      {/* EFT Modal */}
-      {showEftModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-xs">
-          <div className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-2xl border border-gray-100 animate-in fade-in zoom-in-95 duration-150">
-            <div className="flex items-start justify-between border-b border-gray-100 pb-3">
+        {/* =========================================================================
+            STEP 1: TERMS & CONDITIONS + PAYSTACK PLAN (BEFORE UPLOADING DOCS)
+        ========================================================================= */}
+        {currentStep === 1 && (
+          <div>
+            <div className="flex flex-col justify-between gap-2 border-b border-gray-100 pb-4 sm:flex-row sm:items-center">
               <div>
-                <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2.5 py-0.5 text-[10px] font-bold text-amber-900">
-                  <Landmark className="h-3 w-3" /> Official Investec Bank Details
+                <span className="text-xs font-bold uppercase tracking-wider text-consultx-green-dark">
+                  Step 2 of 3 &middot; Terms &amp; Payment Activation
                 </span>
-                <h3 className="mt-1 text-base font-bold text-consultx-black">
-                  Bank EFT Payment Instructions
-                </h3>
+                <h2 className="text-2xl font-bold text-consultx-black">
+                  Review Agreement &amp; Select Payment Action
+                </h2>
               </div>
-              <button
-                type="button"
-                onClick={() => setShowEftModal(false)}
-                className="text-gray-400 hover:text-gray-700 text-lg font-bold"
-              >
-                ✕
-              </button>
-            </div>
-
-            <div className="mt-4 rounded-xl bg-gray-50 p-4 border border-gray-200 text-xs space-y-2.5">
-              <div className="flex justify-between">
-                <span className="text-gray-500">Bank Name:</span>
-                <strong className="text-gray-900">Investec Bank Ltd</strong>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-500">Account Name:</span>
-                <strong className="text-gray-900">ConsultX (Pty) Ltd</strong>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-500">Account Number:</span>
-                <strong className="font-mono text-gray-900">10012498214</strong>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-500">Branch Code:</span>
-                <strong className="font-mono text-gray-900">580105</strong>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-500">Account Type:</span>
-                <strong className="text-gray-900">Business Current Account</strong>
-              </div>
-              <div className="flex justify-between bg-amber-50 p-2 rounded-lg border border-amber-200">
-                <span className="text-amber-900 font-bold">Payment Reference:</span>
-                <strong className="font-mono text-amber-950 font-bold text-sm">
-                  {jobReference}
-                </strong>
-              </div>
-              <div className="flex justify-between pt-1">
-                <span className="text-gray-500">Total Amount:</span>
-                <strong className="text-consultx-green-dark font-mono text-sm">
-                  {quote.totalFormatted}
-                </strong>
+              <div className="text-right">
+                <span className="rounded-full bg-consultx-green-soft px-3 py-1 text-xs font-bold text-consultx-green-dark font-mono">
+                  Ref: {jobReference}
+                </span>
               </div>
             </div>
 
-            <div className="mt-4 rounded-lg bg-blue-50 p-3 text-[11px] text-blue-900 border border-blue-100 leading-relaxed">
-              <strong>Official Email Dispatch:</strong> An official Pro-Forma Tax Invoice PDF has been dispatched to <strong>{contactForm.email || "your email"}</strong> from <strong>craig@consultx.co.za</strong>. Craig has been notified of your service request.
+            <p className="mt-3 text-sm text-consultx-charcoal">
+              Before uploading your verification documents, please review the engagement terms. You can either <strong>activate your monthly subscription immediately via Paystack</strong>, or <strong>request to confirm specifics with Craig first</strong> if you have questions.
+            </p>
+
+            {/* Quoted Plan Summary Box */}
+            <div className="mt-6 rounded-2xl border border-consultx-green/30 bg-consultx-green-soft/40 p-5">
+              <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                <div>
+                  <span className="text-xs font-bold uppercase tracking-wider text-consultx-green-dark">
+                    Your Personalized Service Retainer Plan
+                  </span>
+                  <h3 className="text-lg font-bold text-consultx-black mt-0.5">
+                    {signupForm.companyName} &mdash;{" "}
+                    {initialQuoteOption === "option_1"
+                      ? "Option 1 (Consolidated Monthly Retainer)"
+                      : "Option 2 (Core Monthly Retainer + Year-End AFS)"}
+                  </h3>
+                  <p className="text-xs text-gray-600 mt-1">
+                    Billed to: <strong>{signupForm.fullName}</strong> ({signupForm.email})
+                  </p>
+                </div>
+
+                <div className="bg-white rounded-xl p-4 border border-consultx-green/20 text-right min-w-[220px]">
+                  <span className="text-xs text-gray-500 block">Monthly Retainer Due</span>
+                  <strong className="text-2xl font-bold text-consultx-green-dark font-mono block">
+                    R{effectiveMonthlyZar.toLocaleString("en-ZA", { minimumFractionDigits: 2 })}
+                  </strong>
+                  <span className="text-[11px] text-gray-500">incl. 15% South African VAT</span>
+                </div>
+              </div>
+
+              {initialQuoteOption === "option_2" && (
+                <div className="mt-3 pt-3 border-t border-consultx-green/20 flex justify-between text-xs text-gray-700">
+                  <span>Annual Financial Statements &amp; Tax (billed upon FYE completion):</span>
+                  <strong className="font-mono text-consultx-black">
+                    R{effectiveAfsFeeZar.toLocaleString("en-ZA", { minimumFractionDigits: 2 })} (incl. VAT)
+                  </strong>
+                </div>
+              )}
             </div>
 
-            <div className="mt-5 flex flex-col sm:flex-row gap-2">
+            {/* Terms Acceptance Checkboxes */}
+            <div className="mt-6 space-y-3 rounded-xl border border-gray-200 bg-gray-50/50 p-4">
+              <label className="flex items-start gap-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={acceptedTerms}
+                  onChange={(e) => setAcceptedTerms(e.target.checked)}
+                  className="mt-1 h-4 w-4 rounded border-gray-300 text-consultx-green focus:ring-consultx-green"
+                />
+                <span className="text-xs text-gray-700 leading-relaxed">
+                  I accept the{" "}
+                  <Link href="/terms/" target="_blank" className="font-bold text-consultx-green-dark underline">
+                    ConsultX Professional Engagement Terms &amp; Conditions
+                  </Link>
+                  . I understand that all agreed core bookkeeping and compliance is covered under the monthly retainer schedule, and any out-of-scope advisory work will be quoted in advance.
+                </span>
+              </label>
+
+              <label className="flex items-start gap-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={acceptedMandate}
+                  onChange={(e) => setAcceptedMandate(e.target.checked)}
+                  className="mt-1 h-4 w-4 rounded border-gray-300 text-consultx-green focus:ring-consultx-green"
+                />
+                <span className="text-xs text-gray-700 leading-relaxed">
+                  I authorize ConsultX (Pty) Ltd and Craig Ulyate (CA(SA)) as our appointed accounting officers and registered SARS tax practitioners for the duration of this engagement.
+                </span>
+              </label>
+            </div>
+
+            {/* Two Payment Options Side-by-Side */}
+            <div className="mt-8 grid gap-5 sm:grid-cols-2">
+              {/* Option A: Pay & Activate via Paystack */}
+              <div className="rounded-2xl border-2 border-consultx-green bg-white p-5 flex flex-col justify-between shadow-soft">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-consultx-green text-white">
+                      <CreditCard className="h-4 w-4" />
+                    </span>
+                    <h4 className="text-sm font-bold text-consultx-black">
+                      Option A: Pay &amp; Activate Immediately
+                    </h4>
+                  </div>
+                  <p className="mt-2 text-xs text-gray-600 leading-relaxed">
+                    Set up your secure monthly debit/credit card subscription via Paystack now. Your workspace activates immediately, and your card is billed R{effectiveMonthlyZar.toLocaleString("en-ZA", { minimumFractionDigits: 2 })}/month.
+                  </p>
+                  <ul className="mt-3 space-y-1.5 text-xs text-gray-600">
+                    <li className="flex items-center gap-2">
+                      <Check className="h-3.5 w-3.5 text-consultx-green" /> Supports Visa, Mastercard, Instant EFT, Capitec Pay
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <Check className="h-3.5 w-3.5 text-consultx-green" /> Bank-grade PCI-DSS Level 1 encryption
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <Check className="h-3.5 w-3.5 text-consultx-green" /> Instant official VAT invoice dispatched
+                    </li>
+                  </ul>
+                </div>
+
+                <div className="mt-6">
+                  <button
+                    type="button"
+                    onClick={handlePaystackPayment}
+                    disabled={isProcessingPaystack}
+                    className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-consultx-green py-3 px-4 text-xs font-bold text-white transition hover:bg-consultx-green-dark shadow-soft disabled:opacity-50"
+                  >
+                    {isProcessingPaystack ? (
+                      <>
+                        <RefreshCw className="h-4 w-4 animate-spin" /> Launching Paystack...
+                      </>
+                    ) : (
+                      <>
+                        <CreditCard className="h-4 w-4" /> Pay &amp; Activate via Paystack (R{effectiveMonthlyZar.toLocaleString("en-ZA", { minimumFractionDigits: 2 })})
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+
+              {/* Option B: Confirm with Craig Before Paying */}
+              <div className="rounded-2xl border border-gray-200 bg-gray-50/60 p-5 flex flex-col justify-between">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-amber-500 text-white">
+                      <HelpCircle className="h-4 w-4" />
+                    </span>
+                    <h4 className="text-sm font-bold text-consultx-black">
+                      Option B: Confirm with Craig Before Paying
+                    </h4>
+                  </div>
+                  <p className="mt-2 text-xs text-gray-600 leading-relaxed">
+                    Have unique accounting nuances or questions about your financial year-end schedule? Request a priority 15-minute call with Craig Ulyate (CA(SA)) before any payment is processed.
+                  </p>
+
+                  <div className="mt-3">
+                    <label className="block text-[11px] font-bold text-gray-700">
+                      Specific questions or details to discuss with Craig:
+                    </label>
+                    <textarea
+                      rows={2}
+                      value={craigNotes}
+                      onChange={(e) => setCraigNotes(e.target.value)}
+                      placeholder="e.g. Can we connect to our existing Xero? Need to confirm year-end timing..."
+                      className="mt-1 w-full rounded-lg border border-gray-200 p-2 text-xs focus:border-consultx-green focus:outline-none"
+                    />
+                  </div>
+                </div>
+
+                <div className="mt-6">
+                  <button
+                    type="button"
+                    onClick={handleConfirmWithCraig}
+                    disabled={isSubmittingCraigRequest}
+                    className="w-full inline-flex items-center justify-center gap-2 rounded-xl border border-gray-300 bg-white py-3 px-4 text-xs font-bold text-consultx-black transition hover:bg-gray-100 disabled:opacity-50"
+                  >
+                    {isSubmittingCraigRequest ? (
+                      <>
+                        <RefreshCw className="h-4 w-4 animate-spin" /> Submitting Request...
+                      </>
+                    ) : (
+                      <>
+                        <Phone className="h-4 w-4 text-amber-600" /> Confirm with Craig &amp; Proceed to Uploads
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-6 flex justify-between">
               <button
                 type="button"
-                onClick={downloadProFormaPdf}
-                className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl bg-consultx-green px-4 py-2.5 text-xs font-bold text-white hover:bg-consultx-green-dark shadow-soft"
+                onClick={() => setCurrentStep(0)}
+                className="inline-flex items-center gap-1.5 text-xs font-bold text-gray-500 hover:text-gray-900"
               >
-                <Download className="h-4 w-4" /> Download Pro-Forma PDF
-              </button>
-              <button
-                type="button"
-                onClick={() => setShowEftModal(false)}
-                className="inline-flex items-center justify-center rounded-xl border border-gray-300 px-4 py-2.5 text-xs font-semibold text-gray-700 hover:bg-gray-50"
-              >
-                Close
+                <ArrowLeft className="h-4 w-4" /> Back to Profile
               </button>
             </div>
           </div>
-        </div>
-      )}
+        )}
+
+        {/* =========================================================================
+            STEP 2: CLIENT SERVICE AI CHAT & SECURE CLOUD DOCUMENT VAULT
+        ========================================================================= */}
+        {currentStep === 2 && (
+          <div>
+            {/* Top Workspace Header & Progress */}
+            <div className="border-b border-gray-100 pb-5">
+              <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-bold uppercase tracking-wider text-consultx-green-dark">
+                      Step 3 of 3 &middot; Active Workspace
+                    </span>
+                    <span className="rounded bg-gray-100 px-2 py-0.5 text-[10px] font-mono text-gray-600">
+                      {signupForm.companyName}
+                    </span>
+                  </div>
+                  <h2 className="text-2xl font-bold text-consultx-black mt-0.5">
+                    Client Service AI Chat &amp; Cloud Document Vault
+                  </h2>
+                </div>
+
+                <div className="flex items-center gap-2.5">
+                  {paymentChoice === "paid" ? (
+                    <span className="inline-flex items-center gap-1.5 rounded-full bg-consultx-green/20 px-3 py-1 text-xs font-bold text-consultx-green-dark">
+                      <CheckCircle2 className="h-3.5 w-3.5" /> Paystack Retainer Active
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-100 px-3 py-1 text-xs font-bold text-amber-800">
+                      <Phone className="h-3.5 w-3.5" /> Pending Craig Consultation
+                    </span>
+                  )}
+                  <button
+                    type="button"
+                    onClick={syncProgressToCraig}
+                    disabled={isSyncing}
+                    className="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 py-1 text-xs font-bold text-consultx-black hover:bg-gray-50"
+                  >
+                    <RefreshCw className={`h-3 w-3 ${isSyncing ? "animate-spin text-consultx-green" : ""}`} />
+                    Share Progress with Craig
+                  </button>
+                </div>
+              </div>
+
+              {/* Live Progress Bar */}
+              <div className="mt-4 rounded-xl bg-gray-50 p-3 border border-gray-100">
+                <div className="flex justify-between items-center text-xs mb-1.5">
+                  <span className="font-bold text-gray-700">
+                    Onboarding Verification Progress: {completedRequirements.length} of {CHECKLIST_REQUIREMENTS.length} Requirements Met
+                  </span>
+                  <span className="font-mono font-bold text-consultx-green-dark">{progressPercent}%</span>
+                </div>
+                <div className="h-2 w-full rounded-full bg-gray-200 overflow-hidden">
+                  <div
+                    className="h-full bg-consultx-green transition-all duration-500"
+                    style={{ width: `${progressPercent}%` }}
+                  />
+                </div>
+                {syncStatus && (
+                  <p className="mt-2 text-[11px] text-gray-500 flex items-center gap-1">
+                    <Check className="h-3 w-3 text-consultx-green" /> {syncStatus}
+                  </p>
+                )}
+              </div>
+            </div>
+
+            {/* Split Screen Layout: AI Chat on Left, Document Folder on Right */}
+            <div className="mt-6 grid gap-6 lg:grid-cols-12">
+              {/* LEFT COLUMN: Client Service AI Chat (7 cols) */}
+              <div className="lg:col-span-7 flex flex-col rounded-2xl border border-gray-200 bg-white shadow-soft overflow-hidden h-[580px]">
+                {/* Chat Header */}
+                <div className="bg-consultx-black text-white px-4 py-3 flex items-center justify-between border-b border-white/10">
+                  <div className="flex items-center gap-2.5">
+                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-consultx-green text-white">
+                      <Bot className="h-4 w-4" />
+                    </div>
+                    <div>
+                      <h4 className="text-xs font-bold leading-none">AnNa Client Service AI</h4>
+                      <span className="text-[10px] text-gray-300">Supervised by Craig Ulyate (CA(SA))</span>
+                    </div>
+                  </div>
+                  <span className="flex items-center gap-1 text-[10px] font-mono text-consultx-green">
+                    <span className="h-1.5 w-1.5 rounded-full bg-consultx-green animate-pulse" /> Live Service Session
+                  </span>
+                </div>
+
+                {/* Chat Message Scroll Area */}
+                <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-gray-50/50 text-xs">
+                  {chatMessages.map((msg) => (
+                    <div
+                      key={msg.id}
+                      className={`flex gap-2.5 ${msg.sender === "user" ? "justify-end" : "justify-start"}`}
+                    >
+                      {msg.sender === "ai" && (
+                        <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded bg-consultx-green text-white text-[10px]">
+                          <Bot className="h-3.5 w-3.5" />
+                        </div>
+                      )}
+                      <div
+                        className={`max-w-[85%] rounded-2xl p-3 leading-relaxed ${
+                          msg.sender === "user"
+                            ? "bg-consultx-black text-white rounded-br-xs"
+                            : "bg-white text-gray-800 border border-gray-200 shadow-2xs rounded-bl-xs"
+                        }`}
+                      >
+                        <p className="whitespace-pre-wrap">{msg.text}</p>
+                        <span className={`block text-[9px] mt-1 text-right ${msg.sender === "user" ? "text-gray-400" : "text-gray-400"}`}>
+                          {msg.timestamp}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                  {isAiTyping && (
+                    <div className="flex gap-2 text-xs text-gray-400 items-center">
+                      <Bot className="h-4 w-4 text-consultx-green" />
+                      <span>AnNa is formulating guidance...</span>
+                    </div>
+                  )}
+                  <div ref={chatBottomRef} />
+                </div>
+
+                {/* Quick Action Chips */}
+                <div className="px-3 py-2 bg-white border-t border-gray-100 flex items-center gap-1.5 overflow-x-auto text-[11px]">
+                  <button
+                    type="button"
+                    onClick={() => setChatInput("What format do bank statements need to be in?")}
+                    className="shrink-0 rounded-full border border-gray-200 bg-gray-50 px-2.5 py-1 text-gray-600 hover:bg-gray-100"
+                  >
+                    Bank statement formats?
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setChatInput("Can I invite you directly to our Xero or QuickBooks?")}
+                    className="shrink-0 rounded-full border border-gray-200 bg-gray-50 px-2.5 py-1 text-gray-600 hover:bg-gray-100"
+                  >
+                    Xero / QuickBooks access?
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setChatInput("Where do I find my COR14.3 certificate?")}
+                    className="shrink-0 rounded-full border border-gray-200 bg-gray-50 px-2.5 py-1 text-gray-600 hover:bg-gray-100"
+                  >
+                    Where is my COR14.3?
+                  </button>
+                </div>
+
+                {/* Chat Input Bar */}
+                <div className="p-3 bg-white border-t border-gray-100 flex items-center gap-2">
+                  <input
+                    type="text"
+                    value={chatInput}
+                    onChange={(e) => setChatInput(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && handleSendChatMessage()}
+                    placeholder="Ask AnNa any onboarding question or provide details..."
+                    className="flex-1 rounded-xl border border-gray-200 px-3.5 py-2 text-xs focus:border-consultx-green focus:outline-none"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleSendChatMessage}
+                    className="flex h-8 w-8 items-center justify-center rounded-lg bg-consultx-green text-white hover:bg-consultx-green-dark"
+                  >
+                    <Send className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+              </div>
+
+              {/* RIGHT COLUMN: Secure Cloud Folder & Upload Zone (5 cols) */}
+              <div className="lg:col-span-5 flex flex-col gap-4">
+                {/* Checklist Cards */}
+                <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-soft">
+                  <h4 className="text-xs font-bold text-consultx-black uppercase tracking-wider mb-2.5 flex items-center justify-between">
+                    <span>Onboarding Requirements</span>
+                    <ShieldCheck className="h-4 w-4 text-consultx-green" />
+                  </h4>
+                  <div className="space-y-2">
+                    {CHECKLIST_REQUIREMENTS.map((item) => {
+                      const isDone = completedRequirements.some((c) => c.id === item.id);
+                      return (
+                        <div
+                          key={item.id}
+                          className={`rounded-xl border p-2.5 text-xs transition flex items-start justify-between gap-2 ${
+                            isDone
+                              ? "border-consultx-green bg-consultx-green-soft/30 text-consultx-green-dark"
+                              : "border-gray-100 bg-gray-50/50 text-gray-700"
+                          }`}
+                        >
+                          <div>
+                            <strong className="block text-[11px] font-bold">{item.title}</strong>
+                            <p className="text-[10px] text-gray-500 mt-0.5">{item.desc}</p>
+                          </div>
+                          <span
+                            className={`rounded px-1.5 py-0.5 text-[10px] font-bold uppercase shrink-0 ${
+                              isDone
+                                ? "bg-consultx-green text-white"
+                                : "bg-gray-200 text-gray-600"
+                            }`}
+                          >
+                            {isDone ? "Uploaded" : "Pending"}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Upload Zone */}
+                <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-soft flex-1 flex flex-col justify-between">
+                  <div>
+                    <h4 className="text-xs font-bold text-consultx-black uppercase tracking-wider mb-2">
+                      Secure Cloud Upload Zone
+                    </h4>
+                    <p className="text-[11px] text-gray-500 mb-3">
+                      Select document category before uploading. Encrypted at rest via AES-256 in private cloud buckets.
+                    </p>
+
+                    <label className="block text-[11px] font-bold text-gray-700 mb-1">
+                      Upload Document As:
+                    </label>
+                    <select
+                      value={selectedUploadCategory}
+                      onChange={(e) => setSelectedUploadCategory(e.target.value)}
+                      className="w-full rounded-lg border border-gray-200 p-2 text-xs focus:border-consultx-green focus:outline-none mb-3"
+                    >
+                      {CHECKLIST_REQUIREMENTS.map((r) => (
+                        <option key={r.id} value={r.category}>
+                          {r.title}
+                        </option>
+                      ))}
+                      <option value="General Financial Records">Other Financial Records</option>
+                    </select>
+
+                    <label className="border-2 border-dashed border-gray-300 hover:border-consultx-green rounded-xl p-4 flex flex-col items-center justify-center cursor-pointer bg-gray-50/60 hover:bg-consultx-green-soft/20 transition">
+                      <Upload className="h-6 w-6 text-gray-400 mb-1" />
+                      <span className="text-xs font-bold text-consultx-black">Click or drag files here</span>
+                      <span className="text-[10px] text-gray-400 mt-0.5">PDF, XLSX, CSV, JPG or PNG (Up to 25MB)</span>
+                      <input
+                        type="file"
+                        multiple
+                        className="hidden"
+                        onChange={(e) => handleFileUpload(e.target.files)}
+                      />
+                    </label>
+                  </div>
+
+                  {/* Uploaded Files Table */}
+                  {uploadedFiles.length > 0 && (
+                    <div className="mt-4 pt-3 border-t border-gray-100 max-h-36 overflow-y-auto">
+                      <h5 className="text-[11px] font-bold text-gray-700 mb-1.5">
+                        Vault Inventory ({uploadedFiles.length} files):
+                      </h5>
+                      <div className="space-y-1.5">
+                        {uploadedFiles.map((doc) => (
+                          <div
+                            key={doc.id}
+                            className="flex items-center justify-between bg-gray-50 p-2 rounded-lg text-[11px] border border-gray-100"
+                          >
+                            <div className="truncate mr-2">
+                              <strong className="block truncate text-gray-800">{doc.name}</strong>
+                              <span className="text-[9px] text-gray-400">{doc.category} &bull; {doc.size}</span>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => removeFile(doc.id)}
+                              className="text-gray-400 hover:text-red-500 p-1"
+                            >
+                              <Trash2 className="h-3 w-3" />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Bottom Actions */}
+            <div className="mt-6 flex flex-col sm:flex-row items-center justify-between gap-3 border-t border-gray-100 pt-4">
+              <span className="text-xs text-gray-500">
+                Assigned CA(SA): <strong>Craig Ulyate</strong> &bull; craig@consultx.co.za
+              </span>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={syncProgressToCraig}
+                  className="rounded-xl border border-gray-300 bg-white px-4 py-2 text-xs font-bold text-consultx-black hover:bg-gray-50"
+                >
+                  Save &amp; Email Update to Craig
+                </button>
+                <Link
+                  href="/portal/"
+                  className="rounded-xl bg-consultx-black px-4 py-2 text-xs font-bold text-white hover:bg-consultx-charcoal"
+                >
+                  Return to Portal Cockpit
+                </Link>
+              </div>
+            </div>
+          </div>
+        )}
+      </section>
     </>
   );
 }

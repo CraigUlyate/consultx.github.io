@@ -12,6 +12,15 @@ export function OnboardClient() {
   const blueprintId = searchParams.get("blueprint_id") || searchParams.get("bp") || undefined;
   const handoffId = searchParams.get("handoff_id") || searchParams.get("hnd") || undefined;
 
+  const initialName = searchParams.get("name") || undefined;
+  const initialEmail = searchParams.get("email") || undefined;
+  const initialPhone = searchParams.get("phone") || undefined;
+  const initialCompany = searchParams.get("company") || undefined;
+  const initialMonthlyQuote = searchParams.get("monthly") ? parseFloat(searchParams.get("monthly")!) : undefined;
+  const initialQuoteOption = searchParams.get("option") || undefined;
+  const initialAfsFee = searchParams.get("afs_fee") ? parseFloat(searchParams.get("afs_fee")!) : undefined;
+  const leadId = searchParams.get("lead_id") || undefined;
+
   const initialServiceIds = useMemo(() => {
     if (!servicesParam) return [];
     return servicesParam
@@ -50,17 +59,28 @@ export function OnboardClient() {
 
       <div className="mt-4">
         <span className="text-xs font-bold text-consultx-green-dark uppercase tracking-wider">
-          Statutory Services · 2026 Price List
+          New Client Onboarding &middot; 2026 Accounting Suite
         </span>
         <h1 className="mt-1 text-3xl font-bold tracking-tight text-consultx-black md:text-4xl">
-          Onboard Your Company & Statutory Services
+          Complete Your Client Onboarding
         </h1>
         <p className="mt-2 text-sm leading-relaxed text-consultx-charcoal">
-          Seamless onboarding for private companies, close corporations, trusts, and sole proprietors. Upload compliance documents, verify company records, and checkout securely.
+          Sign up your company, review terms and set up your Paystack retainer (or confirm specifics with Craig), then enter your Client Service AI workspace to upload verification records and track progress.
         </p>
       </div>
 
-      <UniversalOnboardingWizard initialServiceIds={initialServiceIds} handoffId={handoffId} />
+      <UniversalOnboardingWizard
+        initialServiceIds={initialServiceIds}
+        handoffId={handoffId}
+        initialName={initialName}
+        initialEmail={initialEmail}
+        initialPhone={initialPhone}
+        initialCompany={initialCompany}
+        initialMonthlyQuote={initialMonthlyQuote}
+        initialQuoteOption={initialQuoteOption}
+        initialAfsFee={initialAfsFee}
+        leadId={leadId}
+      />
     </div>
   );
 }

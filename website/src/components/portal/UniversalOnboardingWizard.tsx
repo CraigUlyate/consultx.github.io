@@ -72,10 +72,11 @@ export function UniversalOnboardingWizard({
   leadId = "",
 }: UniversalOnboardingWizardProps) {
   const [currentStep, setCurrentStep] = useState(0);
+  const [isSubmittingSignup, setIsSubmittingSignup] = useState(false);
 
   // Job & Lead Reference
   const [jobReference] = useState(
-    () => leadId || `CX-2026-${Math.floor(10000 + Math.random() * 90000)}`
+    () => leadId || `CX-${crypto.randomUUID()}`
   );
 
   // Step 1: Sign-Up Profile & Company Details
@@ -316,15 +317,16 @@ export function UniversalOnboardingWizard({
         }),
       });
 
-      if (res.ok) {
-        setCraigRequestSent(true);
-      }
+      const result = await res.json();
+      if (!res.ok || !result.ok) throw new Error("Notification was not accepted");
+      setCraigRequestSent(true);
+      setPaymentChoice("craig_consult");
+      setCurrentStep(2);
     } catch (err) {
       console.warn("Could not submit pre-payment request to backend:", err);
+      alert("Your follow-up request could not be sent. Please retry or email craig@consultx.co.za.");
     } finally {
       setIsSubmittingCraigRequest(false);
-      setPaymentChoice("craig_consult");
-      setCurrentStep(2); // Advance directly to Step 3 so the client can start uploading docs
     }
   };
 
@@ -353,10 +355,10 @@ export function UniversalOnboardingWizard({
       if (res.ok) {
         setSyncStatus("Shared with Craig Ulyate (craig@consultx.co.za) just now.");
       } else {
-        setSyncStatus("Saved locally; synced with Craig.");
+        setSyncStatus("Could not send your update to Craig. Please retry or email craig@consultx.co.za.");
       }
     } catch (err) {
-      setSyncStatus("Saved locally; synced with Craig.");
+      setSyncStatus("Could not send your update to Craig. Please retry or email craig@consultx.co.za.");
     } finally {
       setIsSyncing(false);
     }
@@ -631,12 +633,28 @@ export function UniversalOnboardingWizard({
             <div className="mt-8 flex justify-end">
               <button
                 type="button"
-                onClick={() => {
+                disabled={isSubmittingSignup}
+                onClick={async () => {
                   if (!signupForm.fullName || !signupForm.email || !signupForm.companyName) {
                     alert("Please fill in your Name, Email, and Company Name to continue.");
                     return;
                   }
-                  setCurrentStep(1);
+                  setIsSubmittingSignup(true);
+                  try {
+                    const response = await fetch(`${BACKEND_URL}/api/v1/advisor/portal-signup`, {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({ reference: jobReference, name: signupForm.fullName,
+                        email: signupForm.email, company: signupForm.companyName, phone: signupForm.phone }),
+                    });
+                    const result = await response.json();
+                    if (!response.ok || !result.ok) throw new Error("Signup notification failed");
+                    setCurrentStep(1);
+                  } catch {
+                    alert("Your sign-up details could not be sent. Please retry or email craig@consultx.co.za.");
+                  } finally {
+                    setIsSubmittingSignup(false);
+                  }
                 }}
                 className="inline-flex items-center gap-2 rounded-xl bg-consultx-green px-6 py-3 text-sm font-bold text-white transition hover:bg-consultx-green-dark shadow-soft"
               >

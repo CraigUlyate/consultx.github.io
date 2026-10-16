@@ -33,3 +33,6 @@ Examples/*.docx
 /style.css
 .price-edit/
 hosting-backups/
+.notification-work/
+# Local deployment overlay copied from the separate backend repository.
+infrastructure/notifications/backend/

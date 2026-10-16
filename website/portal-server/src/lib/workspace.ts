@@ -1,5 +1,6 @@
 import { requireDatabase } from "@/lib/database";
 import { z } from "zod";
+import { notifyNewPortalUser } from "@/lib/signup-notification";
 
 export type WorkspaceCompany = {
   id: string;
@@ -31,6 +32,12 @@ export async function ensurePortalUser(input: { entraSubject: string; email: str
       `INSERT INTO organisation_members (organisation_id, user_id, role) VALUES ($1, $2, 'client_admin')`,
       [organisation.rows[0].id, userId],
     );
+  }
+  try {
+    await notifyNewPortalUser(userId);
+  } catch (error) {
+    // Keep access available and retain the pending notification for the next visit.
+    console.error("Portal signup notification pending", { userId, error });
   }
 }
 

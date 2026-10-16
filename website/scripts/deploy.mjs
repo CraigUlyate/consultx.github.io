@@ -18,17 +18,20 @@ const dryRun = args.has("--dry-run");
 const clean = args.has("--clean");
 const skipBuild = args.has("--skip-build");
 const marketingOnly = args.has("--marketing");
+const notificationsOnly = args.has("--notifications");
 const blogSlug = [...args].find((arg) => arg.startsWith("--blog="))?.slice(7);
 if (blogSlug && !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(blogSlug)) {
   throw new Error("Invalid --blog slug");
 }
 if (blogSlug && clean) throw new Error("A scoped blog deployment cannot use --clean");
 if (marketingOnly && (clean || blogSlug)) throw new Error("A marketing deployment cannot use --clean or --blog");
-const scopedUpload = Boolean(blogSlug || marketingOnly);
+if (notificationsOnly && (clean || blogSlug || marketingOnly)) throw new Error("A notification deployment cannot use --clean, --blog or --marketing");
+const scopedUpload = Boolean(blogSlug || marketingOnly || notificationsOnly);
 
 function deploymentFiles() {
   return walkFiles(outDir).filter((file) => {
     const relative = path.relative(outDir, file).replace(/\\/g, "/");
+    if (notificationsOnly) return relative.startsWith("_next/static/") || /\.(html|txt)$/.test(relative);
     if (marketingOnly) {
       return relative.startsWith("_next/static/") ||
         ["index.html", "index.txt", "robots.txt", "sitemap.xml"].includes(relative) ||
